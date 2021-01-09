@@ -2,3 +2,7 @@
 !.gitignore
 !*.v
 !*.ucf
+!img
+!*.jpg
+!*.md
+!scoreCount
