@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module ps2_keyboard (input wire clk, ps2_clk, ps2_data,
-                     output reg [7:0] data, output reg valid);
+                     output reg [7:0] data, output wire valid);
 
 reg idle = 1'b1;
 reg [9:0] ps2_shift = 10'b1000000000;
@@ -63,14 +63,6 @@ always @ (posedge clk)
       end
   end
 
-reg old_zigzag;
-always @ (negedge clk)
-  begin
-    old_zigzag <= zigzag;
-    if (old_zigzag != zigzag)
-      valid <= 1'b1;
-    else
-      valid <= 1'b0;
-  end
+ZigZagGen zig_zag_gen(clk, zigzag, valid);
 
 endmodule

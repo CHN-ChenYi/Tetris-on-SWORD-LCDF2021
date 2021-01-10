@@ -25,5 +25,15 @@ module Rotate(
          output wire [0:15] new_float // after rotation
        );
 
+genvar i, j;
+generate
+  for (i = 0; i < 4; i = i + 1)
+    begin
+      for (j = 0; j < 4; j = j + 1)
+        begin
+          assign new_float[i * 4 + j] = direction ? float[j * 4 + 3 - i] : float[(3 - j) * 4 + i];
+        end
+    end
+endgenerate
 
 endmodule
