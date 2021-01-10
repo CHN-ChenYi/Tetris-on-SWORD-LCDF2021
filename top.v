@@ -191,7 +191,7 @@ always @ (posedge logic_clk)
       end
     else if (operation_pointer == 33) // update static
       begin
-
+        
       end
 
     if (operation_pointer != 0) // next operation
