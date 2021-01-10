@@ -31,7 +31,7 @@ ps2_keyboard keyboard(clk, ps2_clk, ps2_data, raw_data, valid);
 // TODO(TO/GA): Support Arrow Key
 always @ (posedge clk)
   begin
-    if (valid == 1'b1)
+    if (valid == 1'b1 && raw_data != 8'hE0)
       begin
         if (last_raw_data == 8'hF0)
           data <= 8'b0;
@@ -45,10 +45,10 @@ always @ (posedge clk)
 assign key = (data == 8'h00) ? 3'd0 :            // not pressed
        (data == 8'h76) ? 3'd1 :                  // esc
        (data == 8'h29) ? 3'd2 :                  // space
-       (data == 8'h1D || data == 8'h42) ? 3'd3 : // up
-       (data == 8'h1B || data == 8'h3B) ? 3'd4 : // down
-       (data == 8'h1C || data == 8'h33) ? 3'd5 : // left
-       (data == 8'h23 || data == 8'h4B) ? 3'd6 : // right
+       (data == 8'h1D || data == 8'h42 || data == 8'h75) ? 3'd3 : // up
+       (data == 8'h1B || data == 8'h3B || data == 8'h72) ? 3'd4 : // down
+       (data == 8'h1C || data == 8'h33 || data == 8'h6B) ? 3'd5 : // left
+       (data == 8'h23 || data == 8'h4B || data == 8'h74) ? 3'd6 : // right
        3'd7;
 
 endmodule
