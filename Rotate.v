@@ -22,16 +22,19 @@ module Rotate(
          input wire clk,
          input wire [0:15] float, // float blocks' status
          input wire direction, // 0 for clockwise
-         output wire [0:15] new_float // after rotation
+         output reg [0:15] new_float // after rotation
        );
 
 genvar i, j;
 generate
   for (i = 0; i < 4; i = i + 1)
-    begin
+    begin : generate_new_float_i
       for (j = 0; j < 4; j = j + 1)
-        begin
-          assign new_float[i * 4 + j] = direction ? float[j * 4 + 3 - i] : float[(3 - j) * 4 + i];
+        begin : generate_new_float_j
+          always @ (posedge clk)
+            begin
+              new_float[i * 4 + j] <= direction ? float[j * 4 + 3 - i] : float[(3 - j) * 4 + i];
+            end
         end
     end
 endgenerate

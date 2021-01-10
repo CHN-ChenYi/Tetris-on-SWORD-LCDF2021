@@ -39,7 +39,7 @@ reg [4:0] pos_y = pos_y_ori;
 wire [0:15] float_unpacked;
 generate
   for (var_i = 0; var_i < 16; var_i = var_i + 1)
-    begin
+    begin : generate_float_unpacked
       assign float_unpacked[var_i] = float[var_i / 4][var_i % 4];
     end
 endgenerate
@@ -47,7 +47,7 @@ endgenerate
 wire [0:199] static_unpacked;
 generate
   for (var_i = 0; var_i < 200; var_i = var_i + 1)
-    begin
+    begin : generate_static_unpacked
       assign static_unpacked[var_i] = static[var_i / 10][var_i % 10];
     end
 endgenerate
@@ -91,20 +91,20 @@ CollisionChecker down_checker(clk, pos_x, down_pos_y, float_unpacked, static_unp
 wire [0:199] combined;
 Combine combine(clk, pos_x, pos_y, float_unpacked, static_unpacked, combined);
 
-reg [3:0] row_cnt = 4'b0;
+reg [2:0] row_cnt = 3'b0;
 wire eliminate_valid;
 wire [0:199] eliminated;
 RowEliminator row_eliminator(clk, static_unpacked, eliminate_valid, eliminated);
 
 reg score_rst = 1'b0, score_hit = 1'b0;
 wire score_rst_o, score_hit_o;
-wire [2:0] line_cnt = row_cnt - 3'b1;
+wire [1:0] line_cnt = row_cnt - 3'b1;
 ZigZagGen score_rst_gen(clk, score_rst, score_rst_o);
 ZigZagGen score_hit_gen(clk, score_hit, score_hit_o);
 scoreCount score_count(clk, score_rst_o, score_hit_o, line_cnt, SEGCLK, SEGCLR, SEGDT, SEGEN);
 
 wire game_over;
-GameOverChecker game_over_checker(clk, pos_y, float_unpacked, game_over);
+GameOverChecker game_over_checker(pos_y, float_unpacked, game_over);
 wire current_valid;
 CollisionChecker current_checker(clk, pos_x, pos_y, float_unpacked, static_unpacked, current_valid);
 

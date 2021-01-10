@@ -19,7 +19,6 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module GameOverChecker(
-         input wire clk,
          input wire [4:0] pos_y, // anchor point position
          input wire [0:15] float, // float blocks' status
          output wire game_over // 1 for game over
