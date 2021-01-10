@@ -14,6 +14,8 @@ initial shift = 0;
 reg [23:0] num_old;
 reg update;
 
+initial num_old = 23'b11111111111111111111111;
+
 wire clken;
 assign clken = | shift[23:0];
 assign SEGCLK = ~clk & clken;
