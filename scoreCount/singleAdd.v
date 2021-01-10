@@ -8,11 +8,11 @@ module singleAdd(
 	output reg [3:0] Q
     );
 
-always @(posedge clk or negedge rst) begin
+always @(posedge clk or posedge rst) begin
 	if (rst == 1'b1 || CR == 1'b1) 
-	   Q <= 4'b0;
+		Q <= 4'b0;
 	else if (CR == 1'b0 && hit == 1'b1) 
-	   Q <= Q + 1'b1;
+		Q <= Q + 4'b1;
 end
 
 endmodule
