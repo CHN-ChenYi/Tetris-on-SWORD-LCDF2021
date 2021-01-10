@@ -19,6 +19,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module Rotate(
+         input wire clk,
          input wire [0:15] float, // float blocks' status
          input wire direction, // 0 for clockwise
          output wire [0:15] new_float // after rotation
