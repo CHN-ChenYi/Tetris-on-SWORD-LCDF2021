@@ -64,13 +64,6 @@ always @ (posedge clk)
   end
 
 reg old_zigzag;
-always @ (negedge clk)
-  begin
-    old_zigzag <= zigzag;
-    if (old_zigzag != zigzag)
-      valid <= 1'b1;
-    else
-      valid <= 1'b0;
-  end
+ZigZagGen zig_zag_gen(clk, zigzag, valid);
 
 endmodule

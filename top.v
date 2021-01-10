@@ -32,6 +32,7 @@ reg game_status; // 1 for over
 reg [31:0] operation_pointer;
 reg [0:3] float[0:3];
 reg [0:9] static[0:19];
+parameter pos_x_ori = 4'd6, pos_y_ori = 5'd24;
 reg [3:0] pos_x;
 reg [4:0] pos_y;
 
@@ -141,13 +142,20 @@ CollisionChecker down_checker(clk, pos_x, down_pos_y, float_unpacked, static_unp
 wire [0:199] combined;
 Combine combine(pos_x, pos_y, float_unpacked, static_unpacked, combined);
 
-reg [1:0] row_cnt;
+reg [3:0] row_cnt;
 wire eliminate_valid;
 wire [0:199] eliminated;
 RowEliminator row_eliminator(clk, static_unpacked, eliminate_valid, eliminated);
 
+reg score_rst, score_hit;
+wire score_rst_o, score_hit_o;
+wire [2:0] line_cnt = row_cnt - 3'b1;
+ZigZagGen score_rst_gen(clk, score_rst, score_rst_o);
+ZigZagGen score_hit_gen(clk, score_hit, score_hit_o);
+scoreCount score_count(clk, score_rst_o, score_hit_o, line_cnt, SEGCLK, SEGCLR, SEGDT, SEGEN);
+
 wire game_over;
-GameOverChecker game_over_checker(clk, pos_x, pos_y, float_unpacked, game_over);
+GameOverChecker game_over_checker(clk, pos_y, float_unpacked, game_over);
 wire current_valid;
 CollisionChecker current_checker(clk, pos_x, pos_y, float_unpacked, static_unpacked, current_valid);
 
@@ -157,7 +165,12 @@ always @ (posedge logic_clk)
       begin
         if (pressed[1])
           begin
-            // TODO(TO/GA): reset
+            score_rst <= score_rst ^ 1'b1;
+            game_status = 1'b0;
+            for (int_i = 0; int_i < 20; int_i = int_i + 1)
+              static[int_i] = 10'b0;
+            pos_x <= pos_x_ori;
+            pos_y <= pos_y_ori;
           end
         pressed[1] <= 1'b0;
       end
@@ -209,13 +222,13 @@ always @ (posedge logic_clk)
       begin
         for (int_i = 0; int_i < 20; int_i = int_i + 1)
           static[int_i] <= {combined[int_i * 10], combined[int_i * 10 + 1], combined[int_i * 10 + 2], combined[int_i * 10 + 3], combined[int_i * 10 + 4], combined[int_i * 10 + 5], combined[int_i * 10 + 6], combined[int_i * 10 + 7], combined[int_i * 10 + 8], combined[int_i * 10 + 9]}; // TODO(TO/GA): how to avoid collisions?
-        row_cnt <= 2'b0; // prepare for next operation
+        row_cnt <= 3'b0; // prepare for next operation
       end
     else if (34 <= operation_pointer && operation_pointer <= 37) // eliminate rows
       begin
         if (eliminate_valid)
           begin
-            row_cnt <= row_cnt + 1;
+            row_cnt <= row_cnt + 3'b1;
             for (int_i = 0; int_i < 20; int_i = int_i + 1)
               static[int_i] <= {eliminated[int_i * 10], eliminated[int_i * 10 + 1], eliminated[int_i * 10 + 2], eliminated[int_i * 10 + 3], eliminated[int_i * 10 + 4], eliminated[int_i * 10 + 5], eliminated[int_i * 10 + 6], eliminated[int_i * 10 + 7], eliminated[int_i * 10 + 8], eliminated[int_i * 10 + 9]}; // TODO(TO/GA): how to avoid collisions?
           end
@@ -224,7 +237,7 @@ always @ (posedge logic_clk)
       begin
         if (row_cnt)
           begin
-            // TODO(TO/GA): finish it
+            score_hit <= score_hit ^ 1'b1;
           end
       end
     else if (operation_pointer == 39) // game over
@@ -236,18 +249,18 @@ always @ (posedge logic_clk)
       end
     else if (operation_pointer == 40) // update pos
       begin
-        pos_x <= 4'd6;
-        pos_y <= 5'd24;
+        pos_x <= pos_x_ori;
+        pos_y <= pos_y_ori;
       end
 
-    if (game_status) // game over
+    if (pressed[1] || game_status) // game over //TODO(TO/GA): test pressed[1]
       operation_pointer <= 1'b0;
     else if (operation_pointer != 0) // next operation
       operation_pointer <= operation_pointer + 1;
   end
 
 wire display_clk;
-ClkDiv DisplayClk(clk, display_clk, 100_000_000);
+ClkDiv DisplayClk(clk, 100_000_000, display_clk);
 Display display(display_clk, game_status, combined, r, g, b, hs, vs);
 
 endmodule
