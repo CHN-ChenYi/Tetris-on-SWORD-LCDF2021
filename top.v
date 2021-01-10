@@ -8,7 +8,9 @@
 module Top(
          input wire clk,
          input wire PS2_clk, PS2_data,
-         output wire SEGCLK, SEGCLR, SEGDT, SEGEN
+         output wire SEGCLK, SEGCLR, SEGDT, SEGEN,
+         output wire [3:0] r, g, b,
+         output wire hs, vs
        );
 
 reg [0:7] pressed;
@@ -26,11 +28,12 @@ always @ (negedge or_key)
 genvar var_i;
 integer int_i;
 
+reg game_status; // 1 for over
 reg [31:0] operation_pointer;
 reg [0:3] float[0:3];
 reg [0:9] static[0:19];
-reg [3:0] x;
-reg [4:0] y;
+reg [3:0] pos_x;
+reg [4:0] pos_y;
 
 wire [0:15] float_unpacked;
 generate
@@ -116,24 +119,35 @@ ClkDiv LogicClk(clk, 32'd50_000, logic_clk);
 wire clockwise_valid;
 wire [0:15] clockwise_float;
 Rotate clockwise(clk, float_unpacked, 1'b0, clockwise_float);
-CollisionChecker clockwise_checker(clk, x, y, clockwise_float, static_unpacked, clockwise_valid);
+CollisionChecker clockwise_checker(clk, pos_x, pos_y, clockwise_float, static_unpacked, clockwise_valid);
 
 wire counter_clockwise_valid;
 wire [0:15] counter_clockwise_float;
 Rotate counter_clockwise(clk, float_unpacked, 1'b1, counter_clockwise_float);
-CollisionChecker counter_clockwise_checker(clk, x, y, counter_clockwise_float, static_unpacked, counter_clockwise_valid);
+CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static_unpacked, counter_clockwise_valid);
 
 wire left_valid;
-wire left_x = x - 4'b1;
-CollisionChecker left_checker(clk, left_x, y, float_unpacked, static_unpacked, left_valid);
+wire left_pos_x = pos_x - 4'b1;
+CollisionChecker left_checker(clk, left_pos_x, pos_y, float_unpacked, static_unpacked, left_valid);
 
 wire right_valid;
-wire right_x = x + 4'b1;
-CollisionChecker right_checker(clk, right_x, y, float_unpacked, static_unpacked, right_valid);
+wire right_pos_x = pos_x + 4'b1;
+CollisionChecker right_checker(clk, right_pos_x, pos_y, float_unpacked, static_unpacked, right_valid);
 
 wire down_valid;
-wire down_y = y - 5'b1;
-CollisionChecker down_checker(clk, x, down_y, float_unpacked, static_unpacked, down_valid);
+wire down_pos_y = pos_y - 5'b1;
+CollisionChecker down_checker(clk, pos_x, down_pos_y, float_unpacked, static_unpacked, down_valid);
+
+wire [0:199] combined;
+Combine combine(pos_x, pos_y, float_unpacked, static_unpacked, combined);
+
+reg [1:0] row_cnt;
+wire eliminate_valid;
+wire [0:199] eliminated;
+RowEliminator row_eliminator(clk, static_unpacked, eliminate_valid, eliminated);
+
+wire game_over;
+GameOverChecker game_over_checker(clk, pos_x, pos_y, float_unpacked, game_over);
 
 always @ (posedge logic_clk)
   begin
@@ -166,24 +180,24 @@ always @ (posedge logic_clk)
     else if (operation_pointer == 4) // left
       begin
         if (pressed[5] && left_valid)
-          x <= x - 4'b1;
+          pos_x <= pos_x - 4'b1;
         pressed[5] <= 1'b0;
       end
     else if (operation_pointer == 5) // right
       begin
         if (pressed[6] && right_valid)
-          x <= x + 4'b1;
+          pos_x <= pos_x + 4'b1;
         pressed[6] <= 1'b0;
       end
     else if (operation_pointer == 6) // down
       begin
         if (down_valid)
-          y <= y - 5'b1;
+          pos_y <= pos_y - 5'b1;
       end
     else if (7 <= operation_pointer && operation_pointer <= 31) // space
       begin
         if (pressed[2] && down_valid)
-          y <= y - 5'b1;
+          pos_y <= pos_y - 5'b1;
       end
     else if (operation_pointer == 32) // clear space
       begin
@@ -191,11 +205,47 @@ always @ (posedge logic_clk)
       end
     else if (operation_pointer == 33) // update static
       begin
-        
+        for (int_i = 0; int_i < 20; int_i = int_i + 1)
+          static[int_i] <= {combined[int_i * 10], combined[int_i * 10 + 1], combined[int_i * 10 + 2], combined[int_i * 10 + 3], combined[int_i * 10 + 4], combined[int_i * 10 + 5], combined[int_i * 10 + 6], combined[int_i * 10 + 7], combined[int_i * 10 + 8], combined[int_i * 10 + 9]}; // TODO(TO/GA): how to avoid collisions?
+        row_cnt <= 2'b0; // prepare for next operation
+      end
+    else if (34 <= operation_pointer && operation_pointer <= 37) // eliminate rows
+      begin
+        if (eliminate_valid)
+          begin
+            row_cnt <= row_cnt + 1;
+            for (int_i = 0; int_i < 20; int_i = int_i + 1)
+              static[int_i] <= {eliminated[int_i * 10], eliminated[int_i * 10 + 1], eliminated[int_i * 10 + 2], eliminated[int_i * 10 + 3], eliminated[int_i * 10 + 4], eliminated[int_i * 10 + 5], eliminated[int_i * 10 + 6], eliminated[int_i * 10 + 7], eliminated[int_i * 10 + 8], eliminated[int_i * 10 + 9]}; // TODO(TO/GA): how to avoid collisions?
+          end
+      end
+    else if (operation_pointer == 38) // update score
+      begin
+        if (row_cnt)
+          begin
+            // TODO(TO/GA): finish it
+          end
+      end
+    else if (operation_pointer == 39) // game over
+      begin
+        if (game_over)
+          begin
+            game_status <= 1'b1;
+          end
+      end
+    else if (operation_pointer == 40) // update pos
+      begin
+        pos_x <= 4'd6;
+        pos_y <= 5'd24;
       end
 
-    if (operation_pointer != 0) // next operation
+    if (game_status) // game over
+      operation_pointer <= 1'b0;
+    else if (operation_pointer != 0) // next operation
       operation_pointer <= operation_pointer + 1;
   end
+
+wire display_clk;
+ClkDiv DisplayClk(clk, display_clk, 100_000_000);
+Display display(display_clk, game_status, combined, r, g, b, hs, vs);
 
 endmodule
