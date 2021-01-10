@@ -30,27 +30,11 @@ integer int_i;
 
 reg game_status = 1'b0; // 1 for over
 reg [31:0] operation_pointer = 1'b0;
-reg [0:3] float[0:3] = {4'b0, 4'b0, 4'b0, 4'b0};
-reg [0:9] static[0:19] = {10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0, 10'b0};
+reg [0:15] float = 16'b0;
+reg [0:199] static = 200'b0;
 parameter pos_x_ori = 4'd6, pos_y_ori = 5'd24;
 reg [3:0] pos_x = pos_x_ori;
 reg [4:0] pos_y = pos_y_ori;
-
-wire [0:15] float_unpacked;
-generate
-  for (var_i = 0; var_i < 16; var_i = var_i + 1)
-    begin : generate_float_unpacked
-      assign float_unpacked[var_i] = float[var_i / 4][var_i % 4];
-    end
-endgenerate
-
-wire [0:199] static_unpacked;
-generate
-  for (var_i = 0; var_i < 200; var_i = var_i + 1)
-    begin : generate_static_unpacked
-      assign static_unpacked[var_i] = static[var_i / 10][var_i % 10];
-    end
-endgenerate
 
 /////////////////////////////////////////////////////////////////////////
 reg iteration_zigzag = 1'b0;
@@ -68,33 +52,33 @@ Random random(clk, random_number);
 
 wire clockwise_valid;
 wire [0:15] clockwise_float;
-Rotate clockwise(clk, float_unpacked, 1'b0, clockwise_float);
-CollisionChecker clockwise_checker(clk, pos_x, pos_y, clockwise_float, static_unpacked, clockwise_valid);
+Rotate clockwise(clk, float, 1'b0, clockwise_float);
+CollisionChecker clockwise_checker(clk, pos_x, pos_y, clockwise_float, static, clockwise_valid);
 
 wire counter_clockwise_valid;
 wire [0:15] counter_clockwise_float;
-Rotate counter_clockwise(clk, float_unpacked, 1'b1, counter_clockwise_float);
-CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static_unpacked, counter_clockwise_valid);
+Rotate counter_clockwise(clk, float, 1'b1, counter_clockwise_float);
+CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static, counter_clockwise_valid);
 
 wire left_valid;
 wire [3:0] left_pos_x = pos_x - 4'b1;
-CollisionChecker left_checker(clk, left_pos_x, pos_y, float_unpacked, static_unpacked, left_valid);
+CollisionChecker left_checker(clk, left_pos_x, pos_y, float, static, left_valid);
 
 wire right_valid;
 wire [3:0] right_pos_x = pos_x + 4'b1;
-CollisionChecker right_checker(clk, right_pos_x, pos_y, float_unpacked, static_unpacked, right_valid);
+CollisionChecker right_checker(clk, right_pos_x, pos_y, float, static, right_valid);
 
 wire down_valid;
 wire [4:0] down_pos_y = pos_y - 5'b1;
-CollisionChecker down_checker(clk, pos_x, down_pos_y, float_unpacked, static_unpacked, down_valid);
+CollisionChecker down_checker(clk, pos_x, down_pos_y, float, static, down_valid);
 
 wire [0:199] combined;
-Combine combine(clk, pos_x, pos_y, float_unpacked, static_unpacked, combined);
+Combine combine(clk, pos_x, pos_y, float, static, combined);
 
 reg [2:0] row_cnt = 3'b0;
 wire eliminate_valid;
 wire [0:199] eliminated;
-RowEliminator row_eliminator(clk, static_unpacked, eliminate_valid, eliminated);
+RowEliminator row_eliminator(clk, static, eliminate_valid, eliminated);
 
 reg score_rst = 1'b0, score_hit = 1'b0;
 wire score_rst_o, score_hit_o;
@@ -104,9 +88,9 @@ ZigZagGen score_hit_gen(clk, score_hit, score_hit_o);
 scoreCount score_count(clk, score_rst_o, score_hit_o, line_cnt, SEGCLK, SEGCLR, SEGDT, SEGEN);
 
 wire game_over;
-GameOverChecker game_over_checker(pos_y, float_unpacked, game_over);
+GameOverChecker game_over_checker(pos_y, float, game_over);
 wire current_valid;
-CollisionChecker current_checker(clk, pos_x, pos_y, float_unpacked, static_unpacked, current_valid);
+CollisionChecker current_checker(clk, pos_x, pos_y, float, static, current_valid);
 
 always @ (posedge logic_clk)
   begin
@@ -114,54 +98,19 @@ always @ (posedge logic_clk)
       begin
         operation_pointer <= 1;
         if (random_number == 0)
-          begin
-            float[3] <= 4'b0100;
-            float[2] <= 4'b0100;
-            float[1] <= 4'b0100;
-            float[0] <= 4'b0100;
-          end
+          float <= 16'b0100_0100_0100_0100;
         else if (random_number == 1)
-          begin
-            float[3] <= 4'b0000;
-            float[2] <= 4'b0100;
-            float[1] <= 4'b0111;
-            float[0] <= 4'b0000;
-          end
+          float <= 16'b0000_0111_0100_0000;
         else if (random_number == 2)
-          begin
-            float[3] <= 4'b0000;
-            float[2] <= 4'b0010;
-            float[1] <= 4'b1110;
-            float[0] <= 4'b0000;
-          end
+          float <= 16'b0000_1110_0010_0000;
         else if (random_number == 3)
-          begin
-            float[3] <= 4'b0000;
-            float[2] <= 4'b0110;
-            float[1] <= 4'b1100;
-            float[0] <= 4'b0000;
-          end
+          float <= 16'b0000_1100_0110_0000;
         else if (random_number == 4)
-          begin
-            float[3] <= 4'b0000;
-            float[2] <= 4'b1100;
-            float[1] <= 4'b0110;
-            float[0] <= 4'b0000;
-          end
+          float <= 16'b0000_0110_1100_0000;
         else if (random_number == 5)
-          begin
-            float[3] <= 4'b0000;
-            float[2] <= 4'b0100;
-            float[1] <= 4'b1110;
-            float[0] <= 4'b0000;
-          end
+          float <= 16'b0000_1110_0100_0000;
         else if (random_number == 6)
-          begin
-            float[3] <= 4'b0000;
-            float[2] <= 4'b0110;
-            float[1] <= 4'b0110;
-            float[0] <= 4'b0000;
-          end
+          float <= 16'b0000_0110_0110_0000;
       end
     else
       begin
@@ -181,19 +130,13 @@ always @ (posedge logic_clk)
         else if (operation_pointer == 2) // clockwise
           begin
             if (pressed_read[3] != pressed_write[3] && clockwise_valid)
-              begin
-                for (int_i = 0; int_i < 4; int_i = int_i + 1)
-                  float[int_i] <= {clockwise_float[int_i * 4], clockwise_float[int_i * 4 + 1], clockwise_float[int_i * 4 + 2], clockwise_float[int_i * 4 + 3]}; // TODO(TO/GA): how to avoid collisions?
-              end
+              float <= clockwise_float;
             pressed_read[3] <= pressed_write[3];
           end
         else if (operation_pointer == 3) // counter_clockwise
           begin
             if (pressed_read[4] != pressed_write[4] && counter_clockwise_valid)
-              begin
-                for (int_i = 0; int_i < 4; int_i = int_i + 1)
-                  float[int_i] <= {counter_clockwise_float[int_i * 4], counter_clockwise_float[int_i * 4 + 1], counter_clockwise_float[int_i * 4 + 2], counter_clockwise_float[int_i * 4 + 3]}; // TODO(TO/GA): how to avoid collisions?
-              end
+              float <= counter_clockwise_float;
             pressed_read[4] <= pressed_write[4];
           end
         else if (operation_pointer == 4) // left
@@ -224,8 +167,7 @@ always @ (posedge logic_clk)
           end
         else if (operation_pointer == 33) // update static
           begin
-            for (int_i = 0; int_i < 20; int_i = int_i + 1)
-              static[int_i] <= {combined[int_i * 10], combined[int_i * 10 + 1], combined[int_i * 10 + 2], combined[int_i * 10 + 3], combined[int_i * 10 + 4], combined[int_i * 10 + 5], combined[int_i * 10 + 6], combined[int_i * 10 + 7], combined[int_i * 10 + 8], combined[int_i * 10 + 9]}; // TODO(TO/GA): how to avoid collisions?
+            static <= combined;
             row_cnt <= 3'b0; // prepare for next operation
           end
         else if (34 <= operation_pointer && operation_pointer <= 37) // eliminate rows
@@ -233,8 +175,7 @@ always @ (posedge logic_clk)
             if (eliminate_valid)
               begin
                 row_cnt <= row_cnt + 3'b1;
-                for (int_i = 0; int_i < 20; int_i = int_i + 1)
-                  static[int_i] <= {eliminated[int_i * 10], eliminated[int_i * 10 + 1], eliminated[int_i * 10 + 2], eliminated[int_i * 10 + 3], eliminated[int_i * 10 + 4], eliminated[int_i * 10 + 5], eliminated[int_i * 10 + 6], eliminated[int_i * 10 + 7], eliminated[int_i * 10 + 8], eliminated[int_i * 10 + 9]}; // TODO(TO/GA): how to avoid collisions?
+                static <= eliminated;
               end
           end
         else if (operation_pointer == 38) // update score
