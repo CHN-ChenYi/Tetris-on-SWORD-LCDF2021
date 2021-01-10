@@ -148,6 +148,8 @@ RowEliminator row_eliminator(clk, static_unpacked, eliminate_valid, eliminated);
 
 wire game_over;
 GameOverChecker game_over_checker(clk, pos_x, pos_y, float_unpacked, game_over);
+wire current_valid;
+CollisionChecker current_checker(clk, pos_x, pos_y, float_unpacked, static_unpacked, current_valid);
 
 always @ (posedge logic_clk)
   begin
@@ -227,7 +229,7 @@ always @ (posedge logic_clk)
       end
     else if (operation_pointer == 39) // game over
       begin
-        if (game_over)
+        if (game_over || !current_valid)
           begin
             game_status <= 1'b1;
           end
