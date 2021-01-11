@@ -11,6 +11,7 @@ module vgac (vga_clk,clrn,d_in,row_addr,col_addr,rdn,r,g,b,hs,vs); // vgac
    output reg       hs,vs;    // horizontal and vertical synchronization
    // h_count: VGA horizontal counter (0-799)
    reg [9:0] h_count; // VGA horizontal counter (0-799): pixels
+
    always @ (posedge vga_clk) begin
        if (!clrn) begin
            h_count <= 10'h0;
@@ -33,6 +34,19 @@ module vgac (vga_clk,clrn,d_in,row_addr,col_addr,rdn,r,g,b,hs,vs); // vgac
            end
        end
    end
+
+    initial begin
+        h_count=0;
+        v_count=0;
+        row_addr=0;
+        col_addr=0;
+        r=0;
+        g=0;
+        b=0;
+        hs=0;
+        vs=0;
+    end
+
     // signals, will be latched for outputs
     wire  [9:0] row    =  v_count - 10'd35;     // pixel ram row addr 
     wire  [9:0] col    =  h_count - 10'd143;    // pixel ram col addr 
@@ -62,9 +76,9 @@ module vgaio(input wire clk,
              input wire[8:0] HAddr,
              input wire[9:0] LAddr,
              input wire[1:0] Data,
-             output reg[3:0] r,
-             output reg[3:0] g,
-             output reg[3:0] b,
+             output wire[3:0] r,
+             output wire[3:0] g,
+             output wire[3:0] b,
              output wire hs,
              output wire vs);
     
@@ -79,12 +93,16 @@ module vgaio(input wire clk,
     assign LoadAddr = HAddr*640+LAddr;
     
     reg[1:0] ram[0:307199]; //4 color vga ram
+
+    initial begin
+        Dotout=0;
+    end
     
     always@(posedge Load) begin
         ram[LoadAddr] <= Data;
     end
 
-    always@(posedge clk) begin
+    always@(posedge clk_25MHz) begin
         case(ram[DotAddr])
             2'b00:Dotout<=12'h000; //black
             2'b01:Dotout<=12'hF00; //blue
@@ -97,14 +115,19 @@ module vgaio(input wire clk,
         endcase
     end
     
-    wire[3:0] rt, gt, bt;
+    wire[3:0] aa, bb, cc;
+    reg[3:0] rt, gt, bt;
     always@(posedge clk) begin
-        r<=rt;
-        g<=gt;
-        b<=bt;
+        rt<=aa;
+        gt<=bb;
+        bt<=cc;
     end
 
-    vgac v0 (.vga_clk(clk_25MHz),.clrn(clrn),.d_in(Dotout),.row_addr(row_addr),.col_addr(col_addr),.r(rt),.g(gt),.b(bt),.hs(hs),.vs(vs));
+    assign r=rt;
+    assign g=gt;
+    assign b=bt;
+
+    vgac v0 (.vga_clk(clk_25MHz),.clrn(clrn),.d_in(Dotout),.row_addr(row_addr),.col_addr(col_addr),.r(aa),.g(bb),.b(cc),.hs(hs),.vs(vs));
 
 endmodule
 
@@ -113,7 +136,11 @@ module blockmode(input wire clk,
                  input wire[8:0] HAddr,
                  input wire[9:0] LAddr,
                  output reg[1:0] Data);
-      
+
+    initial begin
+        Data=0;
+    end 
+
     wire[4:0] HBlock;
     wire[5:0] LBlock;
     wire[12:0] BAddr;
@@ -170,6 +197,11 @@ module textmode(input wire clk,
     .douta(read) // output [7 : 0] douta
     );
 
+    initial begin
+        Data=0;
+        readAddr=0;
+    end
+
     always@(posedge clk_25MHz)
     begin
         case(BAddr)
@@ -216,13 +248,23 @@ module Display(input wire clk, //100MHz clock
         clk_div <= clk_div + 2'b1;
     end
 
+    initial begin
+        clk_div=0;
+    end
+
     wire Load;
-    assign Load = ~clk;
+    assign Load = ~clk_div[1];
     
     reg[1:0] Data;
     reg[8:0] HAddr;
     reg[9:0] LAddr;
     
+    initial begin
+        Data=0;
+        HAddr=0;
+        LAddr=0;
+    end
+
     wire[1:0] D1,D2;
     
     always@(posedge clk_div[1])
