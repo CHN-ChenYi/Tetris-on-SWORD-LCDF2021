@@ -9,8 +9,11 @@ module Top(
        );
 
 /////////////////////////////////////////////////////////////////////////
-wire user_clk;
+wire logic_clk;
+ClkDiv LogicClk(clk, 32'd500_000, logic_clk);
+wire user_clk, user_clk_o;
 ClkDiv UserClk(clk, 32'd500_000_000, user_clk);
+LoadGen user_gen(logic_clk, {2'b0, user_clk}, 3'b1, user_clk_o);
 
 reg game_status = 1'b0; // 1 for over
 reg [0:15] float = 16'b0;
@@ -27,7 +30,7 @@ Keyboard keyboard(clk, PS2_clk, PS2_data, key);
 generate
   for (i = 0; i < 8; i = i + 1)
     begin : generate_load_gen
-      LoadGen load_gen(user_clk, key, i, pressed[i]);
+      LoadGen load_gen(logic_clk, key, i, pressed[i]);
     end
 endgenerate
 
@@ -60,7 +63,7 @@ wire [3:0] right_pos_x_o = (pressed[6] && right_valid) ? right_pos_x : left_pos_
 wire down_valid;
 wire [4:0] down_pos_y = pos_y - 5'b1;
 CollisionChecker down_checker(clk, right_pos_x_o, down_pos_y, counter_clockwise_float_o, static, down_valid);
-wire [4:0] down_pos_y_o = down_valid ? down_pos_y : pos_y;
+wire [4:0] down_pos_y_o = (user_clk_o && down_valid) ? down_pos_y : pos_y;
 
 wire space_valid[0:24];
 wire [4:0] space_pos_y[0:24], space_pos_y_o[0:24];
@@ -122,10 +125,10 @@ Combine combine_display(clk, new_pos_x, new_pos_y, counter_clockwise_float_o, el
 
 reg [0:199] display_o;
 wire display_clk;
-ClkDiv DisplayClk(clk, 100_000_000, display_clk);
+ClkDiv DisplayClk(clk, 50_000_000, display_clk);
 Display display_(display_clk, game_status, display_o, r, g, b, hs, vs);
 
-always @ (posedge user_clk)
+always @ (posedge logic_clk)
   begin
     if (pressed[1])
       begin
