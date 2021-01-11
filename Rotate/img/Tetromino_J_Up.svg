@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tiling of a 5x8 square using tetrominoes.-->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1"
+     id="Tetromino J Up"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="200"
+     height="300">
+<g><path fill="#0000ff" d="M100,0 h100 v300 h-200 v-100 h100 v-200z"/></g>
+</svg>
