@@ -126,6 +126,9 @@ Combine combine_display(clk, new_pos_x, new_pos_y, counter_clockwise_float_o, el
 reg [0:199] display_o;
 Display display_(clk, game_status, display_o, r, g, b, hs, vs);
 
+always @ (negedge logic_clk)
+  line_cnt <= row_cnt[3] - 3'b1;
+
 always @ (posedge logic_clk)
   begin
     if (pressed[1])
@@ -176,7 +179,6 @@ always @ (posedge logic_clk)
         pos_x <= new_pos_x;
         pos_y <= new_pos_y;
 
-        line_cnt <= row_cnt[3] - 3'b1;
         if (row_cnt[3])
           score_hit <= score_hit ^ 1'b1;
 
