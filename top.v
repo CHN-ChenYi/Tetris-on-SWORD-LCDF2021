@@ -97,20 +97,23 @@ always @ (posedge logic_clk)
     if (start_iteration) // init
       begin
         operation_pointer <= 1;
-        if (random_number == 0)
-          float <= 16'b0100_0100_0100_0100;
-        else if (random_number == 1)
-          float <= 16'b0000_0111_0100_0000;
-        else if (random_number == 2)
-          float <= 16'b0000_1110_0010_0000;
-        else if (random_number == 3)
-          float <= 16'b0000_1100_0110_0000;
-        else if (random_number == 4)
-          float <= 16'b0000_0110_1100_0000;
-        else if (random_number == 5)
-          float <= 16'b0000_1110_0100_0000;
-        else if (random_number == 6)
-          float <= 16'b0000_0110_0110_0000;
+        if (pos_x == pos_x_ori && pos_y == pos_y_ori)
+          begin
+            if (random_number == 0)
+              float <= 16'b0100_0100_0100_0100;
+            else if (random_number == 1)
+              float <= 16'b0000_0111_0100_0000;
+            else if (random_number == 2)
+              float <= 16'b0000_1110_0010_0000;
+            else if (random_number == 3)
+              float <= 16'b0000_1100_0110_0000;
+            else if (random_number == 4)
+              float <= 16'b0000_0110_1100_0000;
+            else if (random_number == 5)
+              float <= 16'b0000_1110_0100_0000;
+            else if (random_number == 6)
+              float <= 16'b0000_0110_0110_0000;
+          end
       end
     else
       begin
@@ -194,8 +197,11 @@ always @ (posedge logic_clk)
           end
         else if (operation_pointer == 40) // update pos
           begin
-            pos_x <= pos_x_ori;
-            pos_y <= pos_y_ori;
+            if (!down_valid)
+              begin
+                pos_x <= pos_x_ori;
+                pos_y <= pos_y_ori;
+              end
           end
 
         if (pressed_read[1] != pressed_write[1] || game_status) // game over //TODO(TO/GA): test pressed[1]
