@@ -8,43 +8,28 @@ module Top(
          output wire hs, vs
        );
 
-reg [1:0] pressed_write[0:7] = {2'b0, 2'b0, 2'b0, 2'b0, 2'b0, 2'b0, 2'b0, 2'b0}, pressed_read[0:7] = {2'b0, 2'b0, 2'b0, 2'b0, 2'b0, 2'b0, 2'b0, 2'b0};
-reg [2:0] last_key = 2'b0;
-wire [2:0] key;
-wire or_key;
-Keyboard keyboard(clk, PS2_clk, PS2_data, key);
-assign or_key = | key;
-always @ (posedge or_key)
-  last_key <= key;
-always @ (negedge or_key)
-  pressed_write[last_key] <= pressed_write[last_key] + 1'b1;
-
 /////////////////////////////////////////////////////////////////////////
-wire logic_clk;
-ClkDiv LogicClk(clk, 32'd50_000, logic_clk);
 wire user_clk;
 ClkDiv UserClk(clk, 32'd500_000_000, user_clk);
 
-genvar var_i;
-integer int_i;
-
 reg game_status = 1'b0; // 1 for over
-reg [31:0] operation_pointer = 1'b0;
 reg [0:15] float = 16'b0;
 reg [0:199] static = 200'b0;
 parameter pos_x_ori = 4'd6, pos_y_ori = 5'd24;
 reg [3:0] pos_x = pos_x_ori;
 reg [4:0] pos_y = pos_y_ori;
 
+genvar i;
 /////////////////////////////////////////////////////////////////////////
-reg iteration_zigzag = 1'b0;
-wire start_iteration;
-ZigZagGen start_iteration_gen(logic_clk, iteration_zigzag, start_iteration);
-
-always @ (posedge user_clk)
-  begin
-    iteration_zigzag <= iteration_zigzag ^ 1'b1;
-  end
+wire pressed[0:7];
+wire [2:0] key;
+Keyboard keyboard(clk, PS2_clk, PS2_data, key);
+generate
+  for (i = 0; i < 8; i = i + 1)
+    begin : generate_load_gen
+      LoadGen load_gen(user_clk, key, i, pressed[i]);
+    end
+endgenerate
 
 /////////////////////////////////////////////////////////////////////////
 wire [2:0] random_number;
@@ -54,50 +39,120 @@ wire clockwise_valid;
 wire [0:15] clockwise_float;
 Rotate clockwise(clk, float, 1'b0, clockwise_float);
 CollisionChecker clockwise_checker(clk, pos_x, pos_y, clockwise_float, static, clockwise_valid);
+wire [0:15] clockwise_float_o = (pressed[3] && clockwise_valid) ? clockwise_float : float;
 
 wire counter_clockwise_valid;
 wire [0:15] counter_clockwise_float;
-Rotate counter_clockwise(clk, float, 1'b1, counter_clockwise_float);
+Rotate counter_clockwise(clk, clockwise_float_o, 1'b1, counter_clockwise_float);
 CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static, counter_clockwise_valid);
+wire [0:15] counter_clockwise_float_o = (pressed[4] && counter_clockwise_valid) ? counter_clockwise_float : float;
 
 wire left_valid;
 wire [3:0] left_pos_x = pos_x - 4'b1;
-CollisionChecker left_checker(clk, left_pos_x, pos_y, float, static, left_valid);
+CollisionChecker left_checker(clk, left_pos_x, pos_y, counter_clockwise_float_o, static, left_valid);
+wire [3:0] left_pos_x_o = (pressed[5] && left_valid) ? left_pos_x : pos_x;
 
 wire right_valid;
-wire [3:0] right_pos_x = pos_x + 4'b1;
-CollisionChecker right_checker(clk, right_pos_x, pos_y, float, static, right_valid);
+wire [3:0] right_pos_x = left_pos_x_o + 4'b1;
+CollisionChecker right_checker(clk, right_pos_x, pos_y, counter_clockwise_float_o, static, right_valid);
+wire [3:0] right_pos_x_o = (pressed[6] && right_valid) ? right_pos_x : left_pos_x_o;
 
 wire down_valid;
 wire [4:0] down_pos_y = pos_y - 5'b1;
-CollisionChecker down_checker(clk, pos_x, down_pos_y, float, static, down_valid);
+CollisionChecker down_checker(clk, right_pos_x_o, down_pos_y, counter_clockwise_float_o, static, down_valid);
+wire [4:0] down_pos_y_o = down_valid ? down_pos_y : pos_y;
 
-wire [0:199] combined;
-Combine combine(clk, pos_x, pos_y, float, static, combined);
+wire space_valid[0:24];
+wire [4:0] space_pos_y[0:24], space_pos_y_o[0:24];
+assign space_pos_y[0] = down_pos_y_o - 5'b1;
+CollisionChecker space_checker0(clk, right_pos_x_o, space_pos_y[0], counter_clockwise_float_o, static, space_valid[0]);
+assign space_pos_y_o[0] = (pressed[2] && space_valid[0]) ? space_pos_y[0] : down_pos_y_o;
+generate
+  for (i = 1; i < 25; i = i + 1)
+    begin : generate_space_checker
+      assign space_pos_y[i] = space_pos_y_o[i - 1] - 5'b1;
+      CollisionChecker space_checker(clk, right_pos_x_o, space_pos_y[i], counter_clockwise_float_o, static, space_valid[i]);
+      assign space_pos_y_o[i] = (pressed[2] && space_valid[i]) ? space_pos_y[i] : space_pos_y_o[i - 1];
+    end
+endgenerate
 
-reg [2:0] row_cnt = 3'b0;
-wire eliminate_valid;
-wire [0:199] eliminated;
-RowEliminator row_eliminator(clk, static, eliminate_valid, eliminated);
+wire down_valid2;
+wire [4:0] down_pos_y2 = space_pos_y_o[24] - 5'b1;
+CollisionChecker down_checker2(clk, right_pos_x_o, down_pos_y2, counter_clockwise_float_o, static, down_valid2);
+wire [3:0] new_pos_x = down_valid2 ? right_pos_x_o : pos_x_ori;
+wire [4:0] new_pos_y = down_valid2 ? space_pos_y_o[24] : pos_y_ori;
+
+wire [0:199] combined_o;
+Combine combine(clk, right_pos_x_o, space_pos_y_o[24], counter_clockwise_float_o, static, combined_o);
+
+wire [2:0] row_cnt[0:3];
+wire eliminate_valid[0:3];
+wire [0:199] eliminated[0:3], eliminated_o[0:3];
+RowEliminator row_eliminator0(clk, combined_o, eliminate_valid[0], eliminated[0]);
+assign eliminated_o[0] = eliminate_valid[0] ? eliminated[0] : combined_o;
+assign row_cnt[0][0] = eliminate_valid[0];
+generate
+  for (i = 1; i < 4; i = i + 1)
+    begin : generate_row_eliminator
+      RowEliminator row_eliminator(clk, eliminated_o[i - 1], eliminate_valid[i], eliminated[i]);
+      assign eliminated_o[i] = eliminate_valid[i] ? eliminated[i] : combined_o;
+      assign row_cnt[i] = eliminate_valid[i] ? row_cnt[i - 1] + 3'b1 : row_cnt[i - 1];
+    end
+endgenerate
+
+wire game_over;
+GameOverChecker game_over_checker(space_pos_y_o[24], counter_clockwise_float_o, game_over);
+
+wire current_valid;
+CollisionChecker current_checker(clk, right_pos_x_o, space_pos_y_o[24], counter_clockwise_float_o, eliminated_o[3], current_valid);
+
+wire new_game_status = (game_over | ~current_valid) | game_status;
+
+/////////////////////////////////////////////////////////////////////////
 
 reg score_rst = 1'b0, score_hit = 1'b0;
 wire score_rst_o, score_hit_o;
-wire [1:0] line_cnt = row_cnt - 3'b1;
+reg [1:0] line_cnt;
 ZigZagGen score_rst_gen(clk, score_rst, score_rst_o);
 ZigZagGen score_hit_gen(clk, score_hit, score_hit_o);
 scoreCount score_count(clk, score_rst_o, score_hit_o, line_cnt, SEGCLK, SEGCLR, SEGDT, SEGEN);
 
-wire game_over;
-GameOverChecker game_over_checker(pos_y, float, game_over);
-wire current_valid;
-CollisionChecker current_checker(clk, pos_x, pos_y, float, static, current_valid);
+wire [0:199] display;
+Combine combine_display(clk, new_pos_x, new_pos_y, counter_clockwise_float_o, eliminated_o[3], display);
 
-always @ (posedge logic_clk)
+reg [0:199] display_o;
+wire display_clk;
+ClkDiv DisplayClk(clk, 100_000_000, display_clk);
+Display display_(display_clk, game_status, display_o, r, g, b, hs, vs);
+
+always @ (posedge user_clk)
   begin
-    if (start_iteration) // init
+    if (pressed[1])
       begin
-        operation_pointer <= 1;
-        if (pos_x == pos_x_ori && pos_y == pos_y_ori)
+        score_rst <= score_rst ^ 1'b1;
+        game_status <= 1'b0;
+        static <= 200'b0;
+        pos_x <= pos_x_ori;
+        pos_y <= pos_y_ori;
+        if (random_number == 0)
+          float <= 16'b0100_0100_0100_0100;
+        else if (random_number == 1)
+          float <= 16'b0000_0111_0100_0000;
+        else if (random_number == 2)
+          float <= 16'b0000_1110_0010_0000;
+        else if (random_number == 3)
+          float <= 16'b0000_1100_0110_0000;
+        else if (random_number == 4)
+          float <= 16'b0000_0110_1100_0000;
+        else if (random_number == 5)
+          float <= 16'b0000_1110_0100_0000;
+        else if (random_number == 6)
+          float <= 16'b0000_0110_0110_0000;
+      end
+    else
+      begin
+        game_status <= new_game_status;
+        if (new_pos_x == pos_x_ori && new_pos_y == pos_y_ori)
           begin
             if (random_number == 0)
               float <= 16'b0100_0100_0100_0100;
@@ -114,105 +169,18 @@ always @ (posedge logic_clk)
             else if (random_number == 6)
               float <= 16'b0000_0110_0110_0000;
           end
-      end
-    else
-      begin
-        if (operation_pointer == 1) // esc
-          begin
-            if (pressed_read[1] != pressed_write[1])
-              begin
-                score_rst <= score_rst ^ 1'b1;
-                game_status <= 1'b0;
-                for (int_i = 0; int_i < 20; int_i = int_i + 1)
-                  static[int_i] <= 10'b0;
-                pos_x <= pos_x_ori;
-                pos_y <= pos_y_ori;
-              end
-            pressed_read[1] <= pressed_write[1];
-          end
-        else if (operation_pointer == 2) // clockwise
-          begin
-            if (pressed_read[3] != pressed_write[3] && clockwise_valid)
-              float <= clockwise_float;
-            pressed_read[3] <= pressed_write[3];
-          end
-        else if (operation_pointer == 3) // counter_clockwise
-          begin
-            if (pressed_read[4] != pressed_write[4] && counter_clockwise_valid)
-              float <= counter_clockwise_float;
-            pressed_read[4] <= pressed_write[4];
-          end
-        else if (operation_pointer == 4) // left
-          begin
-            if (pressed_read[5] != pressed_write[5] && left_valid)
-              pos_x <= pos_x - 4'b1;
-            pressed_read[5] <= pressed_write[5];
-          end
-        else if (operation_pointer == 5) // right
-          begin
-            if (pressed_read[6] != pressed_write[6] && right_valid)
-              pos_x <= pos_x + 4'b1;
-            pressed_read[6] <= pressed_write[6];
-          end
-        else if (operation_pointer == 6) // down
-          begin
-            if (down_valid)
-              pos_y <= pos_y - 5'b1;
-          end
-        else if (7 <= operation_pointer && operation_pointer <= 31) // space
-          begin
-            if (pressed_read[2] != pressed_write[2] && down_valid)
-              pos_y <= pos_y - 5'b1;
-          end
-        else if (operation_pointer == 32) // clear space
-          begin
-            pressed_read[2] <= pressed_write[2];
-          end
-        else if (operation_pointer == 33) // update static
-          begin
-            static <= combined;
-            row_cnt <= 3'b0; // prepare for next operation
-          end
-        else if (34 <= operation_pointer && operation_pointer <= 37) // eliminate rows
-          begin
-            if (eliminate_valid)
-              begin
-                row_cnt <= row_cnt + 3'b1;
-                static <= eliminated;
-              end
-          end
-        else if (operation_pointer == 38) // update score
-          begin
-            if (row_cnt)
-              begin
-                score_hit <= score_hit ^ 1'b1;
-              end
-          end
-        else if (operation_pointer == 39) // game over
-          begin
-            if (game_over || !current_valid)
-              begin
-                game_status <= 1'b1;
-              end
-          end
-        else if (operation_pointer == 40) // update pos
-          begin
-            if (!down_valid)
-              begin
-                pos_x <= pos_x_ori;
-                pos_y <= pos_y_ori;
-              end
-          end
+        else
+          float <= counter_clockwise_float_o;
+        static <= eliminated_o[3];
+        pos_x <= new_pos_x;
+        pos_y <= new_pos_y;
 
-        if (pressed_read[1] != pressed_write[1] || game_status) // game over //TODO(TO/GA): test pressed[1]
-          operation_pointer <= 1'b0;
-        else if (operation_pointer != 0) // next operation
-          operation_pointer <= operation_pointer + 1;
+        line_cnt <= row_cnt[3] - 3'b1;
+        if (row_cnt[3])
+          score_hit <= score_hit ^ 1'b1;
+
+        display_o <= display;
       end
   end
-
-wire display_clk;
-ClkDiv DisplayClk(clk, 100_000_000, display_clk);
-Display display(display_clk, game_status, combined, r, g, b, hs, vs);
 
 endmodule
