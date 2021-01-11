@@ -40,13 +40,13 @@ Random random(clk, random_number);
 
 wire clockwise_valid;
 wire [0:15] clockwise_float;
-Rotate clockwise(clk, float, 1'b0, clockwise_float);
+Rotate clockwise(float, 1'b0, clockwise_float);
 CollisionChecker clockwise_checker(clk, pos_x, pos_y, clockwise_float, static, clockwise_valid);
 wire [0:15] clockwise_float_o = (pressed[3] && clockwise_valid) ? clockwise_float : float;
 
 wire counter_clockwise_valid;
 wire [0:15] counter_clockwise_float;
-Rotate counter_clockwise(clk, clockwise_float_o, 1'b1, counter_clockwise_float);
+Rotate counter_clockwise(clockwise_float_o, 1'b1, counter_clockwise_float);
 CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static, counter_clockwise_valid);
 wire [0:15] counter_clockwise_float_o = (pressed[4] && counter_clockwise_valid) ? counter_clockwise_float : float;
 
@@ -124,9 +124,7 @@ wire [0:199] display;
 Combine combine_display(clk, new_pos_x, new_pos_y, counter_clockwise_float_o, eliminated_o[3], display);
 
 reg [0:199] display_o;
-wire display_clk;
-ClkDiv DisplayClk(clk, 50_000_000, display_clk);
-Display display_(display_clk, game_status, display_o, r, g, b, hs, vs);
+Display display_(clk, game_status, display_o, r, g, b, hs, vs);
 
 always @ (posedge logic_clk)
   begin

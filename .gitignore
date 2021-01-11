@@ -1,8 +1,9 @@
-*
+*.*
 !.gitignore
 !*.v
 !*.ucf
 !img
 !*.jpg
+!*.svg
+!*.png
 !*.md
-!scoreCount
