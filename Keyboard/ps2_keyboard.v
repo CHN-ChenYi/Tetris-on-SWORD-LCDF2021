@@ -1,23 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company:
-// Engineer:
-//
-// Create Date:    22:51:46 01/03/2021
-// Design Name:
-// Module Name:    ps2_keyboard
-// Project Name:
-// Target Devices:
-// Tool versions:
-// Description:
-//
-// Dependencies:
-//
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-//////////////////////////////////////////////////////////////////////////////////
 
 module ps2_keyboard (input wire clk, ps2_clk, ps2_data,
                      output reg [7:0] data, output wire valid);
