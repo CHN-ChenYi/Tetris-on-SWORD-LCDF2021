@@ -85,8 +85,9 @@ CollisionChecker down_checker2(clk, right_pos_x_o, down_pos_y2, counter_clockwis
 wire [3:0] new_pos_x = down_valid2 ? right_pos_x_o : pos_x_ori;
 wire [4:0] new_pos_y = down_valid2 ? space_pos_y_o[24] : pos_y_ori;
 
-wire [0:199] combined_o;
-Combine combine(clk, right_pos_x_o, space_pos_y_o[24], counter_clockwise_float_o, static, combined_o);
+wire [0:199] combined;
+Combine combine(clk, right_pos_x_o, space_pos_y_o[24], counter_clockwise_float_o, static, combined);
+wire [0:199] combined_o = down_valid2 ? static : combined;
 
 wire [2:0] row_cnt[0:3];
 wire eliminate_valid[0:3];
@@ -98,7 +99,7 @@ generate
   for (i = 1; i < 4; i = i + 1)
     begin : generate_row_eliminator
       RowEliminator row_eliminator(clk, eliminated_o[i - 1], eliminate_valid[i], eliminated[i]);
-      assign eliminated_o[i] = eliminate_valid[i] ? eliminated[i] : combined_o;
+      assign eliminated_o[i] = eliminate_valid[i] ? eliminated[i] : eliminated_o[i - 1];
       assign row_cnt[i] = eliminate_valid[i] ? row_cnt[i - 1] + 3'b1 : row_cnt[i - 1];
     end
 endgenerate
@@ -106,10 +107,7 @@ endgenerate
 wire game_over;
 GameOverChecker game_over_checker(space_pos_y_o[24], counter_clockwise_float_o, game_over);
 
-wire current_valid;
-CollisionChecker current_checker(clk, right_pos_x_o, space_pos_y_o[24], counter_clockwise_float_o, eliminated_o[3], current_valid);
-
-wire new_game_status = (game_over | ~current_valid) | game_status;
+wire new_game_status = game_over | game_status;
 
 /////////////////////////////////////////////////////////////////////////
 
