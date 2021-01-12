@@ -347,7 +347,7 @@ module Combine( //anchor float[15]
         if(col==4'd9) begin
             col<=0;
             if(row==5'd19) begin
-                row=0;
+                row<=0;
             end
             else
             begin
