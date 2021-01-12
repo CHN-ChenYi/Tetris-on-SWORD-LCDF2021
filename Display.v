@@ -365,7 +365,7 @@ module Combine( //anchor float[15]
     wire block;
     assign row_dis=pos_y-row;
     assign col_dis=pos_x-col;
-    assign block=(|(row_dis&5'b11100))|(|(col_dis&4'b1100))?(static[Addr]):(static[Addr]|float[(3-row_dis)*4+col_dis]);
+    assign block=(|(row_dis&5'b11100))|(|(col_dis&4'b1100))?(static[Addr]):(static[Addr]|float[(3-row_dis)*4+(3-col_dis)]);
 
     initial begin
         comb<=0;
