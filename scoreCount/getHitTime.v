@@ -10,7 +10,7 @@ module getHitTime(
 reg [4:0] remainingTime;
 initial remainingTime = 0;
 
-always @(posedge clk) begin
+always @(negedge clk) begin
     if (hit == 1'b1) begin
 		hitTime <= 1'b1;
         if (lineCount == 2'b01)
@@ -20,13 +20,12 @@ always @(posedge clk) begin
 		else if (lineCount == 2'b11) 
 			remainingTime <= 4'b1111;
 	end
-	else if (remainingTime > 4'b0000) begin
+	else if (remainingTime != 4'b0000) begin
 		hitTime <= 1'b1;
 		remainingTime <= remainingTime - 4'b0001;
 	end
-	else begin
+	else
 		hitTime <= 1'b0;
-	end
 end
 
 endmodule
