@@ -13,13 +13,6 @@ module RowEliminator(
 
 // full[0] 表示现在状态下最底下那一行有没有满
 wire [19:0] full;
-// fullRowBelow[5] 表示第6行以及更下面的行中有多少行是满的，最多只会有4行
-wire [2:0] fullRowBelow[20:0];
-// eliminated 只要对全体 full 取或即可
-assign eliminated = |full;
-
-// 暂存下一个局面
-wire [0:199] temp_static;
 
 // 判断每行有没有满
 genvar	i;
@@ -29,27 +22,73 @@ generate for(i = 0;i < 20;i = i + 1)
 	end
 endgenerate
 
-// 判断每一行它们下面都有多少行是满的
-assign fullRowBelow[0] = full[0];
-generate for(i = 1;i < 20;i = i + 1)
-	begin : bfor
-		  assign fullRowBelow[i] = fullRowBelow[i-1] + full[i];
-	end
-endgenerate
+assign eliminated = |full;
 
-// 如果这一行（含自己）以及下面的行有full的，
-// 那么假设记录这些 full 的行数为 n
-// 那么这一行等于这一行上面 n 行的方块格局
-generate for(i = 0;i < 20;i = i + 1)
-  begin : cfor
-      assign temp_static[i] = static[i+fullRowBelow[i]];
-  end
-endgenerate
-
-// 每个时钟周期更新一次局面
-// 反正其他都是 wire，不如全更新
+// 从下往上找，找到一行满的就开始左移
 always @(posedge clk) begin
-  new_static <= temp_static;
+  if (eliminated) begin
+    if (full[0] == 1'b1)
+      new_static <= static << 10;
+    else if (full[1] == 1'b1) begin
+      new_static[10:199] <= static[10:199] << 10;
+      new_static[0:9] <= static[0:9];
+    end else if (full[2] == 1'b1) begin
+      new_static[20:199] <= static[20:199] << 10;
+      new_static[0:19] <= static[0:19];
+    end else if (full[3] == 1'b1) begin
+      new_static[30:199] <= static[30:199] << 10;
+      new_static[0:29] <= static[0:29];
+    end else if (full[4] == 1'b1) begin
+      new_static[40:199] <= static[40:199] << 10;
+      new_static[0:39] <= static[0:39];
+    end else if (full[5] == 1'b1) begin
+      new_static[50:199] <= static[50:199] << 10;
+      new_static[0:49] <= static[0:49];
+    end else if (full[6] == 1'b1) begin
+      new_static[60:199] <= static[60:199] << 10;
+      new_static[0:59] <= static[0:59];
+    end else if (full[7] == 1'b1) begin
+      new_static[70:199] <= static[70:199] << 10;
+      new_static[0:69] <= static[0:69];
+    end else if (full[8] == 1'b1) begin
+      new_static[80:199] <= static[80:199] << 10;
+      new_static[0:79] <= static[0:79];
+    end else if (full[9] == 1'b1) begin
+      new_static[90:199] <= static[90:199] << 10;
+      new_static[0:89] <= static[0:89];
+    end else if (full[10] == 1'b1) begin
+      new_static[100:199] <= static[100:199] << 10;
+      new_static[0:99] <= static[0:99];
+    end else if (full[11] == 1'b1) begin
+      new_static[110:199] <= static[110:199] << 10;
+      new_static[0:109] <= static[0:109];
+    end else if (full[12] == 1'b1) begin
+      new_static[120:199] <= static[120:199] << 10;
+      new_static[0:119] <= static[0:119];
+    end else if (full[13] == 1'b1) begin
+      new_static[130:199] <= static[130:199] << 10;
+      new_static[0:129] <= static[0:129];
+    end else if (full[14] == 1'b1) begin
+      new_static[140:199] <= static[140:199] << 10;
+      new_static[0:139] <= static[0:139];
+    end else if (full[15] == 1'b1) begin
+      new_static[150:199] <= static[150:199] << 10;
+      new_static[0:149] <= static[0:149];
+    end else if (full[16] == 1'b1) begin
+      new_static[160:199] <= static[160:199] << 10;
+      new_static[0:159] <= static[0:159];
+    end else if (full[17] == 1'b1) begin
+      new_static[170:199] <= static[170:199] << 10;
+      new_static[0:169] <= static[0:169];
+    end else if (full[18] == 1'b1) begin
+      new_static[180:199] <= static[180:199] << 10;
+      new_static[0:179] <= static[0:179];
+    end else if (full[19] == 1'b1) begin
+      new_static[190:199] <= static[190:199] << 10;
+      new_static[0:189] <= static[0:189];
+    end 
+	end else 
+    new_static <= static;
 end
 
 endmodule
