@@ -253,7 +253,7 @@ module Display(input wire clk, //100MHz clock
     end
 
     wire Load;
-    assign Load = ~clk_div[1];
+    assign Load = (~clk_div[1])&(~clk_div[0]);
     
     reg[1:0] Data;
     reg[8:0] HAddr;
