@@ -86,3 +86,19 @@ NET "SEGEN"     LOC = R18   | IOSTANDARD = LVCMOS33;
 #PS2
 NET "PS2_clk"   LOC = N18   | IOSTANDARD = LVCMOS33;
 NET "PS2_data"  LOC = M19   | IOSTANDARD = LVCMOS33;
+
+#VGA
+NET "b[0]"                                 LOC = T20       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "b[1]"                                 LOC = R20       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "b[2]"                                 LOC = T22       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "b[3]"                                 LOC = T23       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "g[0]"                                 LOC = R22       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "g[1]"                                 LOC = R23       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "g[2]"                                 LOC = T24       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "g[3]"                                 LOC = T25       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "r[0]"                                 LOC = N21       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "r[1]"                                 LOC = N22       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "r[2]"                                 LOC = R21       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "r[3]"                                 LOC = P21       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "hs"                                       LOC = M22       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
+NET "vs"                                       LOC = M21       | IOSTANDARD = LVCMOS33 | SLEW = FAST ;
