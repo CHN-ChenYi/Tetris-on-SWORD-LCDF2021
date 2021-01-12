@@ -338,20 +338,43 @@ module Combine( //anchor float[15]
          output reg [0:199] comb
        );
 
-    reg[0:199] t;
+    reg[4:0] row;
+    reg[3:0] col;
+    wire[7:0] Addr;
+    assign Addr=10*row+col;
 
-    always@(*)
-    begin
-        t<=static;
-    end
-
-    generate
-        genvar ii,jj;
-        for(jj=0; jj<4; jj=jj+1) begin
-            for(ii=0; ii<4; ii=ii+1) begin:cb
-                always@(posedge clk) comb[(pos_y-jj)*20+(pos_x-ii)]<=comb[(pos_y-jj)*20+(pos_x-ii)] | float[(3-jj)*4+(3-ii)];
+    always@(posedge clk) begin
+        if(col==4'd9) begin
+            col<=0;
+            if(row==5'd19) begin
+                row=0;
+            end
+            else
+            begin
+                row<=row+1;
             end
         end
-    endgenerate
+        else
+        begin
+            col<=col+1;
+        end
+    end
+
+    wire[4:0] row_dis;
+    wire[3:0] col_dis;
+    wire block;
+    assign row_dis=pos_y-row;
+    assign col_dis=pos_x-col;
+    assign block=(|(row_dis&5'b11100))|(|(col_dis&4'b1100))?(static[Addr]):(static[Addr]|float[(3-row_dis)*4+col_dis]);
+
+    initial begin
+        comb<=0;
+        row<=0;
+        col<=0;
+    end
+
+    always@(posedge clk) begin
+        comb[Addr]<=block;
+    end
 
 endmodule
