@@ -2,17 +2,16 @@
 
 module singleAdd(
     input clk,
-	input rst,
 	input hit,
-    input CR,
+    input carry,
 	output reg [3:0] Q
     );
 
-always @(posedge clk or posedge rst) begin
-	if (rst == 1'b1 || CR == 1'b1) 
-		Q <= 4'b0;
-	else if (CR == 1'b0 && hit == 1'b1) 
-		Q <= Q + 4'b1;
+always @(posedge clk or negedge carry) begin
+	if (carry == 1'b0) 
+		Q <= 4'b0000;
+	else if (hit == 1'b1) 
+		Q <= Q + 4'b0001;
 end
 
 endmodule
