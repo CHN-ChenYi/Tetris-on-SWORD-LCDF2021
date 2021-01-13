@@ -149,7 +149,7 @@ always @ (posedge logic_clk)
           float <= 16'b0000_0110_1100_0000;
         else if (random_number == 5)
           float <= 16'b0000_1110_0100_0000;
-        else if (random_number == 6)
+        else
           float <= 16'b0000_0110_0110_0000;
       end
     else
@@ -169,7 +169,7 @@ always @ (posedge logic_clk)
               float <= 16'b0000_0110_1100_0000;
             else if (random_number == 5)
               float <= 16'b0000_1110_0100_0000;
-            else if (random_number == 6)
+            else
               float <= 16'b0000_0110_0110_0000;
           end
         else
