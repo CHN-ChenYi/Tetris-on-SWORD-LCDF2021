@@ -16,8 +16,8 @@ module CollisionChecker(
 
 reg patternCollision;
 reg bottomCollision;
-// reg leftCollision;
-// reg rightCollision;
+reg leftCollision;
+reg rightCollision;
 
 // realPosition for 16 points
 wire [8:0] realPos[0:15];
@@ -39,31 +39,103 @@ assign realPos[14] = (pos_y * 4'b1010) + pos_x - 1'b1;
 assign realPos[15] = (pos_y * 4'b1010) + pos_x; 
 
 // from bottom to up, whether each row has at least a block
-wire [0:2] row;
+wire [0:3] row;
 assign row[0] = |float[0:3];
 assign row[1] = |float[4:7];
 assign row[2] = |float[8:11];
+assign row[3] = |float[12:15];
+
+// from left to right
+wire [0:3] col;
+assign col[0] = |{float[0],float[4],float[8],float[12]};
+assign col[1] = |{float[1],float[5],float[9],float[13]};
+assign col[2] = |{float[2],float[6],float[10],float[14]};
+assign col[3] = |{float[3],float[7],float[11],float[15]};
 
 // once collide, collision = 1
-// assign collision = patternCollision | bottomCollision | leftCollision | rightCollision;
-assign collision = bottomCollision | patternCollision;
+assign collision = patternCollision | bottomCollision | leftCollision | rightCollision;
 
 // judge pattern
-//TODO: more conditions
 always @(posedge clk) begin
-  if (pos_x >= 4'b0011 && pos_x <= 4'b1010 && pos_y >= 5'b00011 && pos_y <= 5'b10100)
-    patternCollision <= (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]) | (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]) | (float[8] & static[realPos[8]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]); 
-  else
-    patternCollision <= 0;
-//   else if ()
+  case (pos_x)
+    4'b0000:
+      case (pos_y)
+        5'b00000:patternCollision <= (float[15] & static[realPos[15]]); 
+        5'b00001:patternCollision <= (float[11] & static[realPos[11]]) | (float[15] & static[realPos[15]]);
+        5'b00010:patternCollision <= (float[7] & static[realPos[7]]) | (float[11] & static[realPos[11]]) | (float[15] & static[realPos[15]]); 
+        5'b10100:patternCollision <= (float[3] & static[realPos[3]]) | (float[7] & static[realPos[7]]) | (float[11] & static[realPos[11]]);
+        5'b10101:patternCollision <=(float[3] & static[realPos[3]]) | (float[7] & static[realPos[7]]); 
+        5'b10110:patternCollision <= (float[3] & static[realPos[3]]); 
+        default: patternCollision <= (float[3] & static[realPos[3]]) | (float[7] & static[realPos[7]]) | (float[11] & static[realPos[11]]) | (float[15] & static[realPos[15]]); 
+      endcase
+    4'b0001:
+      case (pos_y)
+        5'b00000: patternCollision <= (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+        5'b00001: patternCollision <= (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]);
+        5'b00010: patternCollision <= (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]);
+        5'b10100: patternCollision <= (float[2] & static[realPos[2]]) | (float[6] & static[realPos[6]]) | (float[10] & static[realPos[10]]) | (float[3] & static[realPos[3]]) | (float[7] & static[realPos[7]]) | (float[11] & static[realPos[11]]);
+        5'b10101: patternCollision <= (float[2] & static[realPos[2]]) | (float[6] & static[realPos[6]]) | (float[3] & static[realPos[3]]) | (float[7] & static[realPos[7]]) ;
+        5'b10110: patternCollision <= (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]);
+        default: patternCollision <= (float[2] & static[realPos[2]]) | (float[6] & static[realPos[6]]) | (float[10] & static[realPos[10]]) | (float[14] & static[realPos[14]]) | (float[3] & static[realPos[3]]) | (float[7] & static[realPos[7]]) | (float[11] & static[realPos[11]]) | (float[15] & static[realPos[15]]); 
+      endcase
+    4'b0010:
+      case (pos_y)
+        5'b00000: patternCollision <= (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+        5'b00001: patternCollision <= (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+        5'b00010: patternCollision <= (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+        5'b10100: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]);
+        5'b10101: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]);
+        5'b10110: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]);
+        default: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+      endcase
+    4'b1010:
+      case (pos_y)
+        5'b00000: patternCollision <= (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[12] & static[realPos[12]]);
+        5'b00001: patternCollision <= (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[8] & static[realPos[8]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[12] & static[realPos[12]]);
+        5'b00010: patternCollision <= (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[4] & static[realPos[4]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[8] & static[realPos[8]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[12] & static[realPos[12]]);
+        5'b10100: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[0] & static[realPos[0]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[4] & static[realPos[4]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[8] & static[realPos[8]]);
+        5'b10101: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[0] & static[realPos[0]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[4] & static[realPos[4]]);
+        5'b10110: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[0] & static[realPos[0]]);
+        default: patternCollision <= (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[0] & static[realPos[0]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[4] & static[realPos[4]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[8] & static[realPos[8]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[12] & static[realPos[12]]);
+      endcase
+    4'b1011:
+      case (pos_y)
+        5'b00000: patternCollision <= (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]);
+        5'b00001: patternCollision <= (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) |  (float[8] & static[realPos[8]])  |  (float[9] & static[realPos[9]]) ;
+        5'b00010: patternCollision <= (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) |  (float[8] & static[realPos[8]])  |  (float[9] & static[realPos[9]]) | (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) ;
+        5'b10100: patternCollision <= (float[8] & static[realPos[8]])  |  (float[9] & static[realPos[9]]) | (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]);
+        5'b10101: patternCollision <= (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]);
+        5'b10110: patternCollision <= (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]);
+        default: patternCollision <= (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) |  (float[8] & static[realPos[8]])  |  (float[9] & static[realPos[9]]) | (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]);
+      endcase
+    4'b1100:
+      case (pos_y)
+        5'b00000: patternCollision <= (float[0] & static[realPos[0]]); 
+        5'b00001: patternCollision <= (float[0] & static[realPos[0]]) | (float[4] & static[realPos[4]]); 
+        5'b00010: patternCollision <= (float[0] & static[realPos[0]]) | (float[4] & static[realPos[4]]) | (float[8] & static[realPos[8]]); 
+        5'b10100: patternCollision <= (float[4] & static[realPos[4]]) | (float[8] & static[realPos[8]]) | (float[12] & static[realPos[12]]); 
+        5'b10101: patternCollision <= (float[8] & static[realPos[8]]) | (float[12] & static[realPos[12]]); 
+        5'b10110: patternCollision <= (float[12] & static[realPos[12]]);
+        default: patternCollision <= (float[0] & static[realPos[0]]) | (float[4] & static[realPos[4]]) | (float[8] & static[realPos[8]]) | (float[12] & static[realPos[12]]); 
+      endcase
+    default:
+      case (pos_y)
+        5'b00000: patternCollision <= (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+        5'b00001: patternCollision <= (float[8] & static[realPos[8]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+        5'b00010: patternCollision <= (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]) | (float[8] & static[realPos[8]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]);
+        5'b10100: patternCollision <= (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]) | (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]) | (float[8] & static[realPos[8]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]);
+        5'b10101: patternCollision <= (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]) | (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]);
+        5'b10110: patternCollision <=  (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]);
+        default:patternCollision <= (float[0] & static[realPos[0]]) | (float[1] & static[realPos[1]]) | (float[2] & static[realPos[2]]) | (float[3] & static[realPos[3]]) | (float[4] & static[realPos[4]]) | (float[5] & static[realPos[5]]) | (float[6] & static[realPos[6]]) | (float[7] & static[realPos[7]]) | (float[8] & static[realPos[8]]) | (float[9] & static[realPos[9]]) | (float[10] & static[realPos[10]]) | (float[11] & static[realPos[11]]) | (float[12] & static[realPos[12]]) | (float[13] & static[realPos[13]]) | (float[14] & static[realPos[14]]) | (float[15] & static[realPos[15]]); 
+      endcase
+  endcase
 end
-
 
 // judge bottom
 // if pos_y < 0, then pos_y = 11111
 always @(posedge clk) begin
   if (pos_y == 5'b11111)
-    bottomCollision <= 1;
+    bottomCollision <= 1'b1;
   else if (row[0] == 1'b1)
     bottomCollision <= ~ (pos_y[1:0] == 2'b11 || |pos_y[4:2]);
   else if (row[1] == 1'b1)
@@ -71,7 +143,35 @@ always @(posedge clk) begin
   else if (row[2] == 1'b1)
     bottomCollision <= ~ (|pos_y);
   else
-	 bottomCollision <= 0;
+	  bottomCollision <= 1'b0;
+end
+
+// judge left
+always @(posedge clk) begin
+  if (pos_x == 4'b1111)
+    leftCollision <= 1'b1;
+  else if (col[0] == 1'b1)
+    leftCollision <= ~ (pos_x[1:0] == 2'b11 || |pos_x[3:2]);
+  else if (col[1] == 1'b1)
+    leftCollision <= ~ (|pos_x[3:1]);
+  else if (col[2] == 1'b1)
+    leftCollision <= ~ (|pos_x);
+  else
+    leftCollision <= 1'b0;
+end
+
+// judge right
+always @(posedge clk) begin
+  if (pos_x == 4'b1101)
+    rightCollision <= 1'b1;
+  else if (col[3] == 1'b1) 
+    rightCollision <= (pos_x[3] == 1'b1) && (|pos_x[2:1]);
+  else if (col[2] == 1'b1)
+    rightCollision <= pos_x[3:2] == 2'b11 || pos_x == 4'b1011;
+  else if (col[1] == 1'b1)
+    rightCollision <= pos_x[3:2] == 2'b11;
+  else
+    rightCollision <= 1'b0;
 end
 
 endmodule
