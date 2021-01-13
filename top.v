@@ -1,8 +1,7 @@
-// 调用其他文件夹的 .v 文件示例
-// `include "scoreCount/scoreCount.v"
 module Top(
          input wire clk,
          input wire PS2_clk, PS2_data,
+         input wire [3:0] SW,
          output wire SEGCLK, SEGCLR, SEGDT, SEGEN,
          output wire [3:0] r, g, b,
          output wire hs, vs,
@@ -13,7 +12,11 @@ module Top(
 wire logic_clk;
 ClkDiv LogicClk(clk, 32'd500_000, logic_clk);
 wire user_clk, user_clk_o;
-ClkDiv UserClk(clk, 32'd50_000_000, user_clk);
+wire [31:0] speed = SW[3] ? 32'd12_500_000 :
+                    SW[2] ? 32'd16_666_666 :
+                    SW[1] ? 32'd25_000_000 :
+                    32'd50_000_000;
+ClkDiv UserClk(clk, speed, user_clk);
 LoadGen user_gen(logic_clk, {2'b0, user_clk}, 3'b1, user_clk_o);
 
 reg game_status = 1'b1; // 1 for over
