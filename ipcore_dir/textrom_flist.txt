@@ -5,7 +5,6 @@ textrom.asy
 textrom.gise
 textrom.mif
 textrom.ngc
-textrom.sym
 textrom.v
 textrom.veo
 textrom.xco

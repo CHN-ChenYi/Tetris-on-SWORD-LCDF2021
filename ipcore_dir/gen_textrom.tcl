@@ -22,7 +22,7 @@ proc findRtfPath { relativePath } {
 
 source [ findRtfPath "data/projnav/scripts/dpm_cgUtils.tcl" ]
 
-set result [ run_cg_regen "textrom" xc7k160t-1ffg676 Verilog CURRENT ]
+set result [ run_cg_regen "textrom" xc7a100t-1csg324 Verilog CURRENT ]
 
 if { $result == 0 } {
    puts "Core Generator regen command completed successfully."
