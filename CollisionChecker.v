@@ -6,7 +6,7 @@ module CollisionChecker(
          input wire [4:0] pos_y, // anchor point position
          input wire [0:15] float, // float blocks' status
          input wire [0:199] static, // static blocks' status
-         output wire collision // 1 for collision
+         output wire valid // 1 for no collision
        );
 
 // 12 13 14 15

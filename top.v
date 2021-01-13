@@ -5,14 +5,15 @@ module Top(
          input wire PS2_clk, PS2_data,
          output wire SEGCLK, SEGCLR, SEGDT, SEGEN,
          output wire [3:0] r, g, b,
-         output wire hs, vs
+         output wire hs, vs,
+         output wire [7:0] LED
        );
 
 /////////////////////////////////////////////////////////////////////////
 wire logic_clk;
 ClkDiv LogicClk(clk, 32'd500_000, logic_clk);
 wire user_clk, user_clk_o;
-ClkDiv UserClk(clk, 32'd500_000_000, user_clk);
+ClkDiv UserClk(clk, 32'd50_000_000, user_clk);
 LoadGen user_gen(logic_clk, {2'b0, user_clk}, 3'b1, user_clk_o);
 
 reg game_status = 1'b0; // 1 for over
@@ -48,7 +49,7 @@ wire counter_clockwise_valid;
 wire [0:15] counter_clockwise_float;
 Rotate counter_clockwise(clockwise_float_o, 1'b1, counter_clockwise_float);
 CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static, counter_clockwise_valid);
-wire [0:15] counter_clockwise_float_o = (pressed[4] && counter_clockwise_valid) ? counter_clockwise_float : float;
+wire [0:15] counter_clockwise_float_o = (pressed[4] && counter_clockwise_valid) ? counter_clockwise_float : clockwise_float_o;
 
 wire left_valid;
 wire [3:0] left_pos_x = pos_x - 4'b1;
@@ -94,7 +95,7 @@ wire eliminate_valid[0:3];
 wire [0:199] eliminated[0:3], eliminated_o[0:3];
 RowEliminator row_eliminator0(clk, combined_o, eliminate_valid[0], eliminated[0]);
 assign eliminated_o[0] = eliminate_valid[0] ? eliminated[0] : combined_o;
-assign row_cnt[0][0] = eliminate_valid[0];
+assign row_cnt[0] = {2'b0, eliminate_valid[0]};
 generate
   for (i = 1; i < 4; i = i + 1)
     begin : generate_row_eliminator
@@ -107,7 +108,7 @@ endgenerate
 wire game_over;
 GameOverChecker game_over_checker(space_pos_y_o[24], counter_clockwise_float_o, game_over);
 
-wire new_game_status = game_over | game_status;
+wire new_game_status = (~down_valid2 & game_over) | game_status;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -148,7 +149,7 @@ always @ (posedge logic_clk)
           float <= 16'b0000_0110_1100_0000;
         else if (random_number == 5)
           float <= 16'b0000_1110_0100_0000;
-        else if (random_number == 6)
+        else
           float <= 16'b0000_0110_0110_0000;
       end
     else
@@ -168,7 +169,7 @@ always @ (posedge logic_clk)
               float <= 16'b0000_0110_1100_0000;
             else if (random_number == 5)
               float <= 16'b0000_1110_0100_0000;
-            else if (random_number == 6)
+            else
               float <= 16'b0000_0110_0110_0000;
           end
         else
@@ -183,5 +184,15 @@ always @ (posedge logic_clk)
         display_o <= display;
       end
   end
+
+// TODO(TO/GA): delete it
+assign LED[0] = clockwise_valid;
+assign LED[1] = counter_clockwise_valid;
+assign LED[2] = left_valid;
+assign LED[3] = right_valid;
+assign LED[4] = down_valid;
+assign LED[5] = down_valid2;
+assign LED[6] = game_over;
+assign LED[7] = line_cnt[0];
 
 endmodule
