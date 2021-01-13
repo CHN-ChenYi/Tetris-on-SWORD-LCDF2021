@@ -54,6 +54,7 @@ assign col[3] = |{float[3],float[7],float[11],float[15]};
 
 // once collide, collision = 1
 assign collision = patternCollision | bottomCollision | leftCollision | rightCollision;
+assign valid = ~collision;
 
 // judge pattern
 always @(posedge clk) begin
