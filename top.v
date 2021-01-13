@@ -49,7 +49,7 @@ wire counter_clockwise_valid;
 wire [0:15] counter_clockwise_float;
 Rotate counter_clockwise(clockwise_float_o, 1'b1, counter_clockwise_float);
 CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static, counter_clockwise_valid);
-wire [0:15] counter_clockwise_float_o = (pressed[4] && counter_clockwise_valid) ? counter_clockwise_float : float;
+wire [0:15] counter_clockwise_float_o = (pressed[4] && counter_clockwise_valid) ? counter_clockwise_float : clockwise_float_o;
 
 wire left_valid;
 wire [3:0] left_pos_x = pos_x - 4'b1;
@@ -95,7 +95,7 @@ wire eliminate_valid[0:3];
 wire [0:199] eliminated[0:3], eliminated_o[0:3];
 RowEliminator row_eliminator0(clk, combined_o, eliminate_valid[0], eliminated[0]);
 assign eliminated_o[0] = eliminate_valid[0] ? eliminated[0] : combined_o;
-assign row_cnt[0][0] = eliminate_valid[0];
+assign row_cnt[0] = {2'b0, eliminate_valid[0]};
 generate
   for (i = 1; i < 4; i = i + 1)
     begin : generate_row_eliminator
@@ -185,7 +185,7 @@ always @ (posedge logic_clk)
       end
   end
 
-// TODO:(TO/GA) delete it
+// TODO(TO/GA): delete it
 assign LED[0] = clockwise_valid;
 assign LED[1] = counter_clockwise_valid;
 assign LED[2] = left_valid;
