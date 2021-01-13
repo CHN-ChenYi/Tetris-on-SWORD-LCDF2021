@@ -5,7 +5,8 @@ module Top(
          input wire PS2_clk, PS2_data,
          output wire SEGCLK, SEGCLR, SEGDT, SEGEN,
          output wire [3:0] r, g, b,
-         output wire hs, vs
+         output wire hs, vs,
+         output wire [7:0] LED
        );
 
 /////////////////////////////////////////////////////////////////////////
@@ -183,5 +184,15 @@ always @ (posedge logic_clk)
         display_o <= display;
       end
   end
+
+// TODO:(TO/GA) delete it
+assign LED[0] = clockwise_valid;
+assign LED[1] = counter_clockwise_valid;
+assign LED[2] = left_valid;
+assign LED[3] = right_valid;
+assign LED[4] = down_valid;
+assign LED[5] = down_valid2;
+assign LED[6] = game_over;
+assign LED[7] = line_cnt[0];
 
 endmodule
