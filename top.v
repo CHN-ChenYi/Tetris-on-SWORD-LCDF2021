@@ -13,7 +13,7 @@ module Top(
 wire logic_clk;
 ClkDiv LogicClk(clk, 32'd500_000, logic_clk);
 wire user_clk, user_clk_o;
-ClkDiv UserClk(clk, 32'd500_000_000, user_clk);
+ClkDiv UserClk(clk, 32'd50_000_000, user_clk);
 LoadGen user_gen(logic_clk, {2'b0, user_clk}, 3'b1, user_clk_o);
 
 reg game_status = 1'b0; // 1 for over
