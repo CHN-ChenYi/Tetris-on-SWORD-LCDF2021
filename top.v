@@ -108,7 +108,7 @@ endgenerate
 wire game_over;
 GameOverChecker game_over_checker(space_pos_y_o[24], counter_clockwise_float_o, game_over);
 
-wire new_game_status = game_over | game_status;
+wire new_game_status = (~down_valid2 & game_over) | game_status;
 
 /////////////////////////////////////////////////////////////////////////
 
