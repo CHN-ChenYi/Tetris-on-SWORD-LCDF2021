@@ -19,7 +19,7 @@ wire [31:0] speed = SW[3] ? 32'd12_500_000 :
 ClkDiv UserClk(clk, speed, user_clk);
 LoadGen user_gen(logic_clk, {2'b0, user_clk}, 3'b1, user_clk_o);
 
-reg game_status = 1'b1; // 1 for over
+reg game_status = 1'b0; // 1 for over
 reg [0:15] float = 16'b0;
 reg [0:199] static = 200'b0;
 parameter pos_x_ori = 4'd6, pos_y_ori = 5'd24;
