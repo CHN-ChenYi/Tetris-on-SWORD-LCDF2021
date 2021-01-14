@@ -191,7 +191,7 @@ module textmode(input wire clk,
                 //input wire ena,
                 input wire[8:0] HAddr,
                 input wire[9:0] LAddr,
-                output wire[1:0] Data);
+                output reg[1:0] Data);
     
     wire[5:0] HBlock;
     wire[6:0] LBlock;
@@ -230,7 +230,20 @@ module textmode(input wire clk,
         endcase
     end
     
-    assign Data=(read&(8'b10000000>>LAddr[2:0]))?2'b11:2'b01;
+    //assign Data=(read&(8'b10000000>>LAddr[2:0]))?2'b11:2'b01;
+    always@(negedge clk_25MHz)
+    begin
+        case(LAddr[2:0])
+            3'd0:Data<=read[7]?2'b11:2'b01;
+            3'd1:Data<=read[6]?2'b11:2'b01;
+            3'd2:Data<=read[5]?2'b11:2'b01;
+            3'd3:Data<=read[4]?2'b11:2'b01;
+            3'd4:Data<=read[3]?2'b11:2'b01;
+            3'd5:Data<=read[2]?2'b11:2'b01;
+            3'd6:Data<=read[1]?2'b11:2'b01;
+            3'd7:Data<=read[0]?2'b11:2'b01;
+        endcase
+    end
     
 endmodule
 
@@ -244,7 +257,7 @@ module Display(input wire clk, //100MHz clock
                 output wire vs);
 
     
-    reg[2:0] clk_div;
+    reg[1:0] clk_div;
     always@(posedge clk) begin
         clk_div <= clk_div + 2'b1;
     end
@@ -357,7 +370,7 @@ module Combine( //anchor float[15]
     wire block;
     assign row_dis=pos_y-row;
     assign col_dis=pos_x-col;
-    assign block=(|(row_dis[4:2]&3'b111))|(|(col_dis[3:2]&2'b11))?(static[Addr]):(static[Addr]|float[(3-row_dis)*4+(3-col_dis)]);
+    assign block=(|row_dis[4:2])|(|col_dis[3:2])?(static[Addr]):(static[Addr]|float[(3-row_dis)*4+(3-col_dis)]);
 
     /* initial begin
         comb<=0;
