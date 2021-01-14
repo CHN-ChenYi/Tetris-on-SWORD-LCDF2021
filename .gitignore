@@ -6,4 +6,5 @@
 !*.jpg
 !*.svg
 !*.png
+!*.drawio
 !*.md
