@@ -187,13 +187,13 @@ module blockmode(input wire clk,
 endmodule
 
 module textmode(input wire clk,
-                input wire clk_25MHz,
+                //input wire clk_25MHz,
                 //input wire ena,
                 input wire[8:0] HAddr,
                 input wire[9:0] LAddr,
                 output reg[1:0] Data);
     
-    wire[5:0] HBlock;
+    wire[4:0] HBlock;
     wire[6:0] LBlock;
     wire[12:0] BAddr;
     assign HBlock      = HAddr[8:4];
@@ -213,7 +213,7 @@ module textmode(input wire clk,
         readAddr=0;
     end */
 
-    always@(posedge clk_25MHz)
+    always@(*)
     begin
         case(BAddr)
             13'd1234:readAddr <= 12'd624+HAddr[3:0]; //G
@@ -231,7 +231,7 @@ module textmode(input wire clk,
     end
     
     //assign Data=(read&(8'b10000000>>LAddr[2:0]))?2'b11:2'b01;
-    always@(negedge clk_25MHz)
+    always@(*)
     begin
         case(LAddr[2:0])
             3'd0:Data<=read[7]?2'b11:2'b01;
@@ -326,7 +326,7 @@ module Display(input wire clk, //100MHz clock
     endgenerate
 
     blockmode bm (.clk(clk),.d(dd),.Data(D1),.HAddr(HAddr),.LAddr(LAddr));
-    textmode tm (.clk(clk),.clk_25MHz(clk_div[1]),.Data(D2),.HAddr(HAddr),.LAddr(LAddr));
+    textmode tm (.clk(clk),.Data(D2),.HAddr(HAddr),.LAddr(LAddr));
     
     assign Data=mode?D2:D1;
     
