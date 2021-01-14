@@ -190,13 +190,13 @@ always @ (posedge logic_clk)
   end
 
 // TODO(TO/GA): delete it
-assign LED[0] = clockwise_valid;
-assign LED[1] = counter_clockwise_valid;
-assign LED[2] = left_valid;
-assign LED[3] = right_valid;
-assign LED[4] = down_valid;
-assign LED[5] = down_valid2;
-assign LED[6] = game_over;
-assign LED[7] = line_cnt[0];
+assign LED[0] = left_valid;
+assign LED[1] = right_valid;
+assign LED[2] = down_valid2;
+assign LED[3] = down_valid2_o;
+assign LED[4] = user_clk;
+assign LED[5] = down_valid;
+assign LED[6] = line_cnt[0];
+assign LED[7] = line_cnt[1];
 
 endmodule
