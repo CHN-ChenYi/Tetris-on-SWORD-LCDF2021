@@ -5,6 +5,10 @@
 + 计算用户得到的分数
 + 将分数显示至数码管上
 
+## 调试过程
+
++ 在一开始使用如下的结构来进行设计，但是出现了仿真能通过而上板记录的分数有误的问题，因此这一版代码仅作保留参考，故放在调试过程当中。
+
 ### 模块结构
 
 - scoreCount
@@ -492,12 +496,168 @@ carry 也充当了 reset 的功能
 
 
 
-### decodeAll 模块
+## decodeAll 模块
 
 ### 功能用途
 
-将 32位 的 BCD 码（即 8 个十进制数）译码成八个七段数码管的对应值。其中调用了 SegmentDecoder 模块，用于对单一的4位二进制数译码成七段数码管的值。以前实验调用过，不赘述，没仿真。
++ 将 32位 的 BCD 码（即 8 个十进制数）译码成八个七段数码管的对应值。
++ 其中调用了 SegmentDecoder 模块，用于对单一的4位二进制数译码成七段数码管的值。
 
-### Para2Ser 模块
+### 模块结构
 
-串行转并行，用于数码管显示，以前实验调用过，不赘述，没仿真。
+![](img/decodeAllStructure.jpg)
+
+### 输入
+
++ num
+
+### 输出
+
++ segnum
+
+### 代码
+
+```verilog
+`timescale 1ns / 1ps
+
+module decodeAll(
+    input [11:0] num,
+    output [23:0] segnum
+);
+
+SegmentDecoder s1(.hex(num[3:0]),.SEGMENTS(segnum[7:0]));
+SegmentDecoder s2(.hex(num[7:4]),.SEGMENTS(segnum[15:8]));
+SegmentDecoder s3(.hex(num[11:8]),.SEGMENTS(segnum[23:16]));
+```
+
+### 仿真
+
++ 由于这一段仿真意义不大，因此不做仿真
+
+
+
+## SegmentDecoder 模块
+
+### 功能用途
+
++ 将对应一位数字的四位 BCD 码译码成八段数码管的显示格式
+
+### 模块结构
+
+![](img/SegmentDecoderStructure.png)
+
+### 输入
+
++ hex[3:0]
+
+### 输出
+
++ SEGMENTS[7:0]
+
+### 代码
+
+```verilog
+`timescale 1ns / 1ps
+
+module SegmentDecoder(
+	input [3:0] hex, 
+	output wire [7:0] SEGMENTS
+);
+
+reg [6:0] segment;
+    always @*
+        begin
+            case(hex)
+                4'h0: segment[6:0] <= 7'b1000000;
+                4'h1: segment[6:0] <= 7'b1111001;
+                4'h2: segment[6:0] <= 7'b0100100;
+                4'h3: segment[6:0] <= 7'b0110000;
+                4'h4: segment[6:0] <= 7'b0011001;
+                4'h5: segment[6:0] <= 7'b0010010;
+                4'h6: segment[6:0] <= 7'b0000010;
+                4'h7: segment[6:0] <= 7'b1111000;
+                4'h8: segment[6:0] <= 7'b0000000;
+                4'h9: segment[6:0] <= 7'b0010000;
+                4'hA: segment[6:0] <= 7'b0001000;
+                4'hB: segment[6:0] <= 7'b0000011;
+                4'hC: segment[6:0] <= 7'b1000110;
+                4'hD: segment[6:0] <= 7'b0100001;
+                4'hE: segment[6:0] <= 7'b0000110;
+                4'hF: segment[6:0] <= 7'b0001110;
+            endcase
+        end
+    assign SEGMENTS[6:0] = segment[6:0];
+    assign SEGMENTS[7] = 1; 
+endmodule
+```
+
+### 仿真
+
++ 由于这一段仿真意义不大，因此不做仿真
+
+
+
+## Para2Ser 模块
+
+### 功能用途
+
++ 串行转并行，用于数码管显示
+
+### 模块结构
+
+![](img/P2SStructure.png)
+
+### 输入
+
++ num
+
+### 输出
+
++ sout[3:0]
+
+### 代码
+
+```verilog
+`timescale 1ns / 1ps
+
+module Para2Ser(
+	input [63:0] num,
+	input clk,
+	output [3:0] sout
+    );
+
+wire SEGCLK,SEGCLR,SEGDT,SEGEN;
+assign sout[3:0]={SEGCLK,SEGCLR,SEGDT,SEGEN};
+
+reg [64:0] shift;
+initial shift = 0;
+reg [63:0] num_old;
+reg update;
+
+wire clken;
+assign clken = | shift[63:0];
+assign SEGCLK = ~clk & clken;
+assign SEGDT = shift[64];
+assign SEGCLR = 1'b1;
+assign SEGEN = 1'b1;
+initial num_old = 0;
+
+always @(posedge clk) begin
+	num_old <= num;
+	if(num_old != num)
+		update <= 1;
+	else 
+		update <= 0;
+	if(clken)
+		shift = {shift[63:0],1'b0};
+	else if (update)
+		shift = {num,1'b1};
+end
+
+endmodule
+
+```
+
+### 仿真
+
++ 由于这一段仿真意义不大，因此不做仿真
