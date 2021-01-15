@@ -19,7 +19,7 @@ wire [31:0] speed = SW[3] ? 32'd12_500_000 :
 ClkDiv UserClk(clk, speed, user_clk);
 LoadGen user_gen(logic_clk, {2'b0, user_clk}, 3'b1, user_clk_o);
 
-reg game_status = 1'b1; // 1 for over
+reg game_status = 1'b0; // 1 for over
 reg [0:15] float = 16'b0;
 reg [0:199] static = 200'b0;
 parameter pos_x_ori = 4'd6, pos_y_ori = 5'd20; // TODO(TO/GA): delete it
@@ -87,7 +87,7 @@ endgenerate
 wire down_valid2;
 wire [4:0] down_pos_y2 = space_pos_y_o[24] - 5'b1;
 CollisionChecker down_checker2(clk, right_pos_x_o, down_pos_y2, counter_clockwise_float_o, static, down_valid2);
-wire down_valid2_o = down_valid2 | ~user_clk_o;
+wire down_valid2_o = down_valid2 | (~user_clk_o) | (user_clk_o & down_valid);
 wire [3:0] new_pos_x = down_valid2_o ? right_pos_x_o : pos_x_ori;
 wire [4:0] new_pos_y = down_valid2_o ? space_pos_y_o[24] : pos_y_ori;
 

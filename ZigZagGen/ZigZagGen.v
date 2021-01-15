@@ -6,7 +6,8 @@ module ZigZagGen(
          output reg o
        );
 
-reg old_zigzag;
+initial o = 1'b0;
+reg old_zigzag = 1'b0;
 
 always @ (negedge clk)
   begin
