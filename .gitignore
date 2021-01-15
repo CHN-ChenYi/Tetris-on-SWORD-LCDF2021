@@ -9,3 +9,5 @@
 !*.drawio
 !*.md
 !ipcore_dir/*
+!top.bit
+!ipcore_dir.zip
