@@ -8,3 +8,4 @@
 !*.png
 !*.drawio
 !*.md
+!ipcore_dir/*
