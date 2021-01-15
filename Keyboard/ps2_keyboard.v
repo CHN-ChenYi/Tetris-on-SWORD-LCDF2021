@@ -16,19 +16,19 @@ always @ (posedge clk)
     if (idle)
       begin
         ps2_shift <= 10'b1000000000;
-        if ((Fall_Clk == 2'b10) && (!ps2_data))
+        if ((Fall_Clk == 2'b10) && (!ps2_data)) // negedge
           idle <= 1'b0;
         else
           idle <= 1'b1;
       end
     else
       begin
-        if (Fall_Clk == 2'b10)
+        if (Fall_Clk == 2'b10) // negedge
           begin
             if (ps2_shift[0] && ps2_data)
               begin
                 data <= ps2_shift[8:1];
-                zigzag = zigzag ^ 1'b1;
+                zigzag = zigzag ^ 1'b1; // valid = 1 in next clk circle
                 idle <= 1'b1;
               end
             else
