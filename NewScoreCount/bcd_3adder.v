@@ -1,20 +1,25 @@
 `timescale 1ns / 1ps
 
+module bcd_bit(input wire[3:0] a,b,
+                output wire[3:0] c,
+                input wire cin,
+                output wire cout
+                );
+
+    wire [4:0] t;
+    assign t={1'b0,a}+{1'b0,b}+{4'b0,cin};
+    assign {cout,c}=(t>5'd9)?t+5'd6:t;
+
+endmodule
+
 module bcd_adder(input wire[11:0] a,b,
                  output wire[11:0] c);
-  wire[4:0] ta, tb, tc;
-  assign ta={1'b0,a[3:0]}+{1'b0,b[3:0]};
-  assign tb={1'b0,a[7:4]}+{1'b0,b[7:4]};
-  assign tc={1'b0,a[11:8]}+{1'b0,b[11:8]};
 
-  wire[4:0] taa, tbb, tcc;
-  assign taa=(ta>5'd9)?ta+5'd6:ta;
-  assign tbb=(tb>5'd9)?tb+5'd6:tb;
-  assign tcc=(tc>5'd9)?tc+5'd6:tc;
+    wire [1:0] out;
+    bcd_bit bcd0 (.a(a[3:0]),.b(b[3:0]),.c(c[3:0]),.cin(1'b0),.cout(out[0]));
+    bcd_bit bcd1 (.a(a[7:4]),.b(b[7:4]),.c(c[7:4]),.cin(out[0]),.cout(out[1]));
+    bcd_bit bcd2 (.a(a[11:8]),.b(b[11:8]),.c(c[11:8]),.cin(out[1]));
 
-  assign c[11:8]=tcc[3:0]+tbb[4];
-  assign c[7:4]=tbb[3:0]+taa[4];
-  assign c[3:0]=taa[3:0];
 endmodule
 
 
@@ -46,25 +51,5 @@ always@(posedge hit or posedge rst) begin
   if(rst==1'b1) score<=12'h000;
   else score<=update;
 end
-
-/* initial remainingTime = 0;
-
-always @(negedge clk) begin
-    if (hit == 1'b1) begin
-		hitTime <= 1'b1;
-        if (lineCount == 2'b01)
-			remainingTime <= 4'b0011;
-		else if (lineCount == 2'b10) 
-			remainingTime <= 4'b1000;
-		else if (lineCount == 2'b11) 
-			remainingTime <= 4'b1111;
-	end
-	else if (remainingTime != 4'b0000) begin
-		hitTime <= 1'b1;
-		remainingTime <= remainingTime - 4'b0001;
-	end
-	else
-		hitTime <= 1'b0;
-end */
 
 endmodule
