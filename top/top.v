@@ -8,13 +8,14 @@ module Top(
        );
 
 /////////////////////////////////////////////////////////////////////////
+// States
 wire logic_clk;
 ClkDiv LogicClk(clk, 32'd500_000, logic_clk);
 wire user_clk, user_clk_o;
 wire [31:0] speed = SW[3] ? 32'd12_500_000 :
-                    SW[2] ? 32'd16_666_666 :
-                    SW[1] ? 32'd25_000_000 :
-                    32'd50_000_000;
+     SW[2] ? 32'd16_666_666 :
+     SW[1] ? 32'd25_000_000 :
+     32'd50_000_000;
 ClkDiv UserClk(clk, speed, user_clk);
 LoadGen user_gen(logic_clk, {2'b0, user_clk}, 3'b1, user_clk_o);
 
@@ -27,6 +28,7 @@ reg [4:0] pos_y = pos_y_ori;
 
 genvar i;
 /////////////////////////////////////////////////////////////////////////
+// Keyboard Process
 wire pressed[0:7];
 wire [2:0] key;
 Keyboard keyboard(clk, PS2_clk, PS2_data, key);
@@ -38,43 +40,50 @@ generate
 endgenerate
 
 /////////////////////////////////////////////////////////////////////////
+// Game Logic Circuit
 wire [2:0] random_number;
 Random random(clk, random_number);
 
+// UpdateState<clockwise>
 wire clockwise_valid;
 wire [0:15] clockwise_float;
 Rotate clockwise(float, 1'b0, clockwise_float);
 CollisionChecker clockwise_checker(clk, pos_x, pos_y, clockwise_float, static, clockwise_valid);
 wire [0:15] clockwise_float_o = (pressed[3] && clockwise_valid) ? clockwise_float : float;
 
+// UpdateState<counter_clockwise>
 wire counter_clockwise_valid;
 wire [0:15] counter_clockwise_float;
 Rotate counter_clockwise(clockwise_float_o, 1'b1, counter_clockwise_float);
 CollisionChecker counter_clockwise_checker(clk, pos_x, pos_y, counter_clockwise_float, static, counter_clockwise_valid);
 wire [0:15] counter_clockwise_float_o = (pressed[4] && counter_clockwise_valid) ? counter_clockwise_float : clockwise_float_o;
 
+// UpdateState<move_left>
 wire left_valid;
 wire [3:0] left_pos_x = pos_x - 4'b1;
 CollisionChecker left_checker(clk, left_pos_x, pos_y, counter_clockwise_float_o, static, left_valid);
 wire [3:0] left_pos_x_o = (pressed[5] && left_valid) ? left_pos_x : pos_x;
 
+// UpdateState<move_right>
 wire right_valid;
 wire [3:0] right_pos_x = left_pos_x_o + 4'b1;
 CollisionChecker right_checker(clk, right_pos_x, pos_y, counter_clockwise_float_o, static, right_valid);
 wire [3:0] right_pos_x_o = (pressed[6] && right_valid) ? right_pos_x : left_pos_x_o;
 
+// UpdateState<move_down>
 wire down_valid;
 wire [4:0] down_pos_y = pos_y - 5'b1;
 CollisionChecker down_checker(clk, right_pos_x_o, down_pos_y, counter_clockwise_float_o, static, down_valid);
 wire [4:0] down_pos_y_o = (user_clk_o && down_valid) ? down_pos_y : pos_y;
 
+// UpdateState<space> (move to the bottom immediately)
 wire space_valid[0:24];
 wire [4:0] space_pos_y[0:24], space_pos_y_o[0:24];
 assign space_pos_y[0] = down_pos_y_o - 5'b1;
 CollisionChecker space_checker0(clk, right_pos_x_o, space_pos_y[0], counter_clockwise_float_o, static, space_valid[0]);
 assign space_pos_y_o[0] = (pressed[2] && space_valid[0]) ? space_pos_y[0] : down_pos_y_o;
 generate
-  for (i = 1; i < 25; i = i + 1)
+  for (i = 1; i < 25; i = i + 1) // repeat 25 times to ensure hit the buttom
     begin : generate_space_checker
       assign space_pos_y[i] = space_pos_y_o[i - 1] - 5'b1;
       CollisionChecker space_checker(clk, right_pos_x_o, space_pos_y[i], counter_clockwise_float_o, static, space_valid[i]);
@@ -82,10 +91,11 @@ generate
     end
 endgenerate
 
+// Check if still float
 wire down_valid2;
 wire [4:0] down_pos_y2 = space_pos_y_o[24] - 5'b1;
 CollisionChecker down_checker2(clk, right_pos_x_o, down_pos_y2, counter_clockwise_float_o, static, down_valid2);
-wire down_valid2_o = down_valid2 | (~user_clk_o) | (user_clk_o & down_valid);
+wire down_valid2_o = down_valid2 | (~user_clk_o) | (user_clk_o & down_valid); // turn into static only when user_clk_o==1
 wire [3:0] new_pos_x = down_valid2_o ? right_pos_x_o : pos_x_ori;
 wire [4:0] new_pos_y = down_valid2_o ? space_pos_y_o[24] : pos_y_ori;
 
@@ -93,14 +103,15 @@ wire [0:199] combined;
 Combine combine(clk, right_pos_x_o, space_pos_y_o[24], counter_clockwise_float_o, static, combined);
 wire [0:199] combined_o = down_valid2_o ? static : combined;
 
+// eliminate complete rows
 wire [2:0] row_cnt[0:3];
 wire eliminate_valid[0:3];
 wire [0:199] eliminated[0:3], eliminated_o[0:3];
 RowEliminator row_eliminator0(clk, combined_o, eliminate_valid[0], eliminated[0]);
 assign eliminated_o[0] = eliminate_valid[0] ? eliminated[0] : combined_o;
-assign row_cnt[0] = {2'b0, eliminate_valid[0]};
+assign row_cnt[0] = {2'b0, eliminate_valid[0]}; // calc the number of rows deleted
 generate
-  for (i = 1; i < 4; i = i + 1)
+  for (i = 1; i < 4; i = i + 1) // 4 rows can be deleted at most
     begin : generate_row_eliminator
       RowEliminator row_eliminator(clk, eliminated_o[i - 1], eliminate_valid[i], eliminated[i]);
       assign eliminated_o[i] = eliminate_valid[i] ? eliminated[i] : eliminated_o[i - 1];
@@ -112,9 +123,12 @@ wire game_over;
 GameOverChecker game_over_checker(space_pos_y_o[24], counter_clockwise_float_o, game_over);
 
 wire new_game_status = (~down_valid2_o & game_over) | game_status;
+// only when the float is out of the screen and can't go down can we say it's an end
 
 /////////////////////////////////////////////////////////////////////////
+// Update and Output
 
+// Scoreboard
 reg score_rst = 1'b0, score_hit = 1'b0;
 wire score_rst_o, score_hit_o;
 reg [1:0] line_cnt;
@@ -122,18 +136,19 @@ ZigZagGen score_rst_gen(clk, score_rst, score_rst_o);
 ZigZagGen score_hit_gen(clk, score_hit, score_hit_o);
 scoreCount score_count(clk, score_rst_o, score_hit_o, line_cnt, SEGCLK, SEGCLR, SEGDT, SEGEN);
 
+// VGA Display
 wire [0:199] display;
 Combine combine_display(clk, new_pos_x, new_pos_y, counter_clockwise_float_o, eliminated_o[3], display);
-
 reg [0:199] display_o;
 Display display_(clk, game_status, display_o, r, g, b, hs, vs);
 
+// prepare for the update of scoreboard in advance
 always @ (negedge logic_clk)
   line_cnt <= row_cnt[3] - 3'b1;
 
 always @ (posedge logic_clk)
   begin
-    if (pressed[1])
+    if (pressed[1]) // reset
       begin
         score_rst <= score_rst ^ 1'b1;
         game_status <= 1'b0;
@@ -158,7 +173,7 @@ always @ (posedge logic_clk)
     else
       begin
         game_status <= new_game_status;
-        if (new_pos_x == pos_x_ori && new_pos_y == pos_y_ori)
+        if (new_pos_x == pos_x_ori && new_pos_y == pos_y_ori) // a new float block
           begin
             if (random_number == 0)
               float <= 16'b0100_0100_0100_0100;
@@ -182,7 +197,7 @@ always @ (posedge logic_clk)
         pos_y <= new_pos_y;
 
         if (row_cnt[3])
-          score_hit <= score_hit ^ 1'b1;
+          score_hit <= score_hit ^ 1'b1; // update score board
 
         display_o <= display;
       end

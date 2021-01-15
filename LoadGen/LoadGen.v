@@ -13,7 +13,7 @@ reg [2:0] old_btn;
 
 always@(posedge clk)
   begin
-    if ((old_btn == supposed_btn) && (btn == 3'b0))
+    if ((old_btn == supposed_btn) && (btn == 3'b0)) // negedge of supposed btn
       load_out <= 1'b1;
     else
       load_out <= 1'b0;
