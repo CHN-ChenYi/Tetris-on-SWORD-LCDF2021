@@ -16,7 +16,7 @@
 - Display模块：封装整个显示逻辑，接受核心游戏逻辑提供的状态参数，将其以特定逻辑映射至VRAM。
 - blockmode模块：将屏幕划分为40\*30的块，输入由Display模块处理的屏幕块信息，输出串行写入信号。
 - textmode模块：从字符点阵ROM中读取数据，生成“GAME OVER！”画面，输出串行写入信号。
-- ![image-20210115012843583](E:\Xilinx\project\image1.png)
+- ![image](image1.png)
 
 ## 模块实现
 
@@ -248,6 +248,8 @@ endmodule
 
 textmode模块根据字符发生ROM产生一幅“GAME OVER！”画面，根据输入的行列地址，返回对应位置的像素点的值。
 
+textrom由预先准备好的字符点阵coe文件通过ISE自带的ip核管理工具生成，属于single port ROM。
+
 ### Display模块
 
 ```verilog
@@ -330,3 +332,63 @@ endmodule
 ```
 
 根据输入mode，选择往vram中输出游戏图像或文字图像，实现时钟分频，扫描刷新vram中的静态图像，输入20\*10的俄罗斯方块游戏区域，利用generate语句将其关联至30\*40\*2的块中，在该过程中实现屏幕区域定位和生成游戏区域边缘的功能。
+
+### Combine模块
+
+```verilog
+module Combine( //anchor float[15]
+         input wire clk,
+         input wire [3:0] pos_x, //col 0-12
+         input wire [4:0] pos_y, //row 0-22
+         input wire [0:15] float,
+         input wire [0:199] static,
+         output reg [0:199] comb
+       );
+
+    reg[4:0] row;
+    reg[3:0] col;
+    wire[7:0] Addr;
+    assign Addr=10*row+col;
+
+    always@(posedge clk) begin
+        if(col==4'd9) begin
+            col<=0;
+            if(row==5'd19) begin
+                row<=0;
+            end
+            else
+            begin
+                row<=row+1;
+            end
+        end
+        else
+        begin
+            col<=col+1;
+        end
+    end
+
+    wire[4:0] row_dis;
+    wire[3:0] col_dis;
+    wire block;
+    assign row_dis=pos_y-row;
+    assign col_dis=pos_x-col;
+    assign block=(|row_dis[4:2])|(|col_dis[3:2])?(static[Addr]):(static[Addr]|float[(3-row_dis)*4+(3-col_dis)]);
+
+    always@(posedge clk) begin
+        comb[Addr]<=block;
+    end
+
+endmodule
+```
+
+本模块负责将浮动的俄罗斯方块与当前游戏状态合并为一幅静止的点阵图像，本模块采用时序电路设计，扫描整个像素点阵，每个时钟周期刷新一个像素点，根据游戏区域大小，Combine模块一次工作耗时200个时钟周期。由于4\*4的浮动俄罗斯方块二进制下具有很好的数字特性，判断当前像素点是否被覆盖只需要减法组合电路及多输入或门即可实现，产生的负数溢出后经计算不影响判断结果。
+
+## 调试过程
+
+显示模块的初期设计功能仅仅是一个将30\*40的像素点阵映射到VGA显示的模块，后在游戏的主体逻辑和状态表示经讨论决定后，决定增加文字显示的功能，且尽可能与外模块解耦，最后修改输入为功能模式切换和接受10\*20的显示状态。
+
+显示模块调试过程遇到的主要问题有两个：
+
+- 显示方块时屏幕上存在黑点，部分点存在闪烁，出现不在预期内的颜色噪点，仿真显示不存在问题——初期调试一直无果，直到某次看到设计报告，告知我的程序中存在大量dual RAM，仔细检查后确认初期作为显存的reg数组被实现为了双口RAM，而双口RAM本身是存在读写冲突问题与延迟的，经过检查发现Load信号的时钟频率过高，导致大量频繁的写操作在RAM发生读写冲突时会造成超过时钟周期的读写延迟，最后通过降低Load信号至合适的频率解决，且尝试用ISE自带的dual RAM代替寄存器实现，实现效果良好。
+- 字符显示开始时最每个字符左侧一列像素的显示存在问题，开始认为同样是由于内存延迟问题导致，按照同样思路去解决无果——后发现，从字符点阵ROM中读取新字符信息与载入当前位置像素信息的操作均在相同时钟的上升沿同时进行，导致上一字符的左侧像素会覆盖当前字符，将always语句调整为*，即对可能的变化敏感触发即可解决问题。
+
