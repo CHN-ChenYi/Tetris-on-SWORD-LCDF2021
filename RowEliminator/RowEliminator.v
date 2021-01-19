@@ -11,10 +11,10 @@ module RowEliminator(
 // 10  11  12  13  14  15  16  17  18  19 
 // 0   1   2   3   4   5   6   7   8   9   
 
-// full[0] 表示现在状态下最底下那一行有没有满
+// e.g. full[0] indicates whether the last row is full
 wire [19:0] full;
 
-// 判断每行有没有满
+// judge whether each row is full
 genvar	i;
 generate for(i = 0;i < 20;i = i + 1)
 	begin : afor
@@ -24,7 +24,9 @@ endgenerate
 
 assign eliminated = |full;
 
-// 从下往上找，找到一行满的就开始左移
+// from bottom to up
+// once found a full row
+// upper blocks shift left 10 bits, which is a row downward
 always @(posedge clk) begin
   if (eliminated) begin
     if (full[0] == 1'b1)

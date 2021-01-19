@@ -45,6 +45,7 @@ scoreCount sC1(.clk(clk),.rst(rst),hit(hit),.lineCount(lineCount),.SEGCLK(SEGCLK
 0   1   2   3   4   5   6   7   8   9   
 ```
 ### pattern 1
+
 Empty.
 ```verilog
 static[0:199] = 200'b0;

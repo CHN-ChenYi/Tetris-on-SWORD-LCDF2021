@@ -7,10 +7,6 @@
 + 注意，如果有多行需要同时消除的话，只需要消除一行即可
 + 由上一层判断消除多行
 
-### 模块结构
-
-
-
 ### 输入
 
 + clk 
@@ -138,7 +134,7 @@ always @(posedge clk) begin
       new_static[0:179] <= static[0:179];
     end else if (full[19] == 1'b1) begin
       new_static[190:199] <= static[190:199] << 10;
-      new_static[0:189] <= static[0:189];
+      new_statc[0:189] <= static[0:189];
     end 
 	end else 
     new_static <= static;
@@ -147,8 +143,10 @@ end
 endmodule
 ```
 
-#### 代码说明
-
 
 
 ### 仿真
+
+![](img/roweli.jpg)
+
+![](img/pattern5.jpg)
