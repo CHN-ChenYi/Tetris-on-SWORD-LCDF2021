@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 
+// turn parallel to serial for display
 module Para2Ser(
 	input [63:0] num,
 	input clk,
@@ -22,6 +23,7 @@ assign SEGCLR = 1'b1;
 assign SEGEN = 1'b1;
 initial num_old = 0;
 
+// check whether the number is updated and shift left accordingly
 always @(posedge clk) begin
 	num_old <= num;
 	if(num_old != num)

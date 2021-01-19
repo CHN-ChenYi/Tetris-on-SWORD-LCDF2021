@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 
+//output the sum of two single BCD coded number a+b to c
 module bcd_bit(input wire[3:0] a,b,
                 output wire[3:0] c,
                 input wire cin,
@@ -12,6 +13,7 @@ module bcd_bit(input wire[3:0] a,b,
 
 endmodule
 
+// output the results of BCD code a+b to c
 module bcd_adder(input wire[11:0] a,b,
                  output wire[11:0] c);
 
@@ -23,7 +25,7 @@ module bcd_adder(input wire[11:0] a,b,
 endmodule
 
 
-module getHitTime(
+module addScore(
 	input hit,
   input rst,
 	input [1:0] lineCount,
@@ -34,6 +36,7 @@ initial score=0;
 
 reg [11:0] t=12'h001;
 
+// map the lines to the score
 always@(*)begin
   case(lineCount)
     2'b00:t<=12'h001;
@@ -45,8 +48,10 @@ end
 
 wire[11:0] update;
 
+// add the scores accordingly to wire update
 bcd_adder b0 (score,t,update);
 
+// when reset, score = 0
 always@(posedge hit or posedge rst) begin
   if(rst==1'b1) score<=12'h000;
   else score<=update;

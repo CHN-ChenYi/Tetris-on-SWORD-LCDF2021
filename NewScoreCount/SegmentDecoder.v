@@ -1,12 +1,12 @@
 `timescale 1ns / 1ps
 
-// 4位bit数转换为七段数码管的解码器
+// 4 bit BCD -> segment display
 module SegmentDecoder(
 	input [3:0] hex, 
 	output wire [7:0] SEGMENTS
 );
 
-// 对不同的数字译码成不同的亮灯
+// different number, different light
 reg [6:0] segment;
 	always @*
 	begin
@@ -30,5 +30,5 @@ reg [6:0] segment;
 		endcase
 	end
 	assign SEGMENTS[6:0] = segment[6:0];
-	assign SEGMENTS[7] = 1; // 小数点让它灭掉就行
+	assign SEGMENTS[7] = 1; // don't display point
 endmodule
