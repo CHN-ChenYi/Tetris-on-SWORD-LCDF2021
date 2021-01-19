@@ -1,4 +1,4 @@
-# Rotate 模块
+# GameOverChecker 模块
 
 ## 基本信息
 
