@@ -19,4 +19,14 @@
 
 ## 仿真
 
- 
+ ![](img/collision.jpg)
+
+总共测试了多种碰撞与不碰撞的情况。
+
+![](img/pattern1.jpg)
+
+![](img/pattern2.jpg)
+
+![](img/pattern3.jpg)
+
+![](img/pattern4.jpg)
